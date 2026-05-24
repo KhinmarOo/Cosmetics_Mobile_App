@@ -8,8 +8,6 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-
-  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -20,23 +18,27 @@ class _SplashScreenState extends State<SplashScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF554518),
-              Color(0xFF262116),
-              Color(0xFF554518),
-            ]
+            colors: [Color(0xFF554518), Color(0xFF262116), Color(0xFF554518)],
           ),
         ),
         child: Center(
           child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Image(image: AssetImage("assets/images/cosmetic_logo.png"),
-              width: 150,
+              Image.asset(
+                "assets/images/cosmetic_logo.png",
+                width: 220,
+                fit: BoxFit.contain,
               ),
-              Text("Beauty with me.",
-              style: TextStyle(
-                fontSize: 35,fontWeight: FontWeight.bold,color: Color(0xFFC7A17A)
-              ),
+              const SizedBox(height: 20),
+              const Text(
+                "Beauty with me.",
+                style: TextStyle(
+                  fontSize: 35,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFC7A17A),
+                ),
               ),
               _buildElegantSubtitle(),
             ],
@@ -47,31 +49,29 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 }
 
-const Color goldColor= Color(0xFFC7A17A);
-Widget _buildElegantSubtitle(){
+const Color goldColor = Color(0xFFC7A17A);
+Widget _buildElegantSubtitle() {
   return Row(
     children: [
       const Expanded(
         child: Divider(
           color: goldColor,
           thickness: 1.0,
-          indent: 500,
+          indent: 40,
           endIndent: 10,
-        )
+        ),
       ),
-      const Text("Your Journey to Elegant",
-      style: TextStyle(
-        fontSize: 8,
-        color: goldColor,
-
-      ),),
+      const Text(
+        "Your Journey to Elegant",
+        style: TextStyle(fontSize: 8, color: goldColor),
+      ),
       const Expanded(
         child: Divider(
           color: goldColor,
           thickness: 1.0,
           indent: 8,
-          endIndent: 500,
-        )
+          endIndent: 40,
+        ),
       ),
     ],
   );

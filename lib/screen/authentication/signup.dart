@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:project/screen/authentication/login.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -9,12 +10,13 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
+
+  final supabase = Supabase.instance.client;
   // Input Controller များ
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
 
   // သတ်မှတ်ထားသော ရွှေအိုရောင် ကုဒ်
   static const Color goldColor = Color(0xFFE6B31E);
@@ -49,7 +51,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                 // (၁) Logo
                 Image.asset(
-                  'assets/img/logo_shield.png', // <--- သင့် Logo ပုံလမ်းကြောင်း
+                  'assets/images/cosmetic_logo.png',
                   width: 100,
                   height: 100,
                   fit: BoxFit.contain,
@@ -124,24 +126,50 @@ class _SignupScreenState extends State<SignupScreen> {
                   icon: Icons.lock_outline,
                   isPassword: true,
                 ),
-                const SizedBox(height: 15),
 
-                // (၈) Confirm Password Field
-                _buildUnderlineTextField(
-                  controller: _confirmPasswordController,
-                  hintText: "Confirm Password",
-                  icon: Icons.lock_outline,
-                  isPassword: true,
-                ),
                 const SizedBox(height: 45),
 
                 // (၉) Create Account Button (ရွှေရောင် Gradient)
                 GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => LoginScreen()),
-                    );// Sign Up နှိပ်ရင် လုပ်မယ့်အလုပ် (နောင်တွင် Database ချိတ်ရန်)
+                  onTap: () async {
+                    // Password ၆ လုံးထက်နည်းရင် Error တက်စေဖို့ (ဒါလေးက အရေးကြီးပါတယ်)
+                    if (_passwordController.text.length < 6) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Password သည် အနည်းဆုံး ၆ လုံး ဖြစ်ရမည်။")),
+                      );
+                      return;
+                    }
+
+                    try {
+                      print("စတင် Sign up လုပ်နေပါပြီ...");
+                      final AuthResponse res = await supabase.auth.signUp(
+                        email: _emailController.text,
+                        password: _passwordController.text,
+                      );
+
+                      if (res.user != null) {
+                        print("Auth အောင်မြင်သွားပြီ၊ Data ထည့်နေပါတယ်...");
+                        await supabase.from('users').insert({
+                          'user_id': res.user!.id,
+                          'user_name': _nameController.text,
+                          'user_email': _emailController.text,
+                          'user_phone': _phoneController.text,
+                          'user_role': 'user',
+                        });
+                        print("Database ထဲ Data ရောက်သွားပါပြီ!");
+                        
+                        // အောင်မြင်ရင် Login စာမျက်နှာကို သွားမယ်
+                        Navigator.pushReplacement(
+                          context, 
+                          MaterialPageRoute(builder: (context) => const LoginScreen())
+                        );
+                      }
+                    } catch (e) {
+                      print("$e");
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("Error: ${e.toString()}")),
+                      );
+                    }
                   },
                   child: Container(
                     width: double.infinity,
@@ -239,7 +267,6 @@ class _SignupScreenState extends State<SignupScreen> {
     _emailController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
-    _confirmPasswordController.dispose();
     super.dispose();
   }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:project/screen/authentication/signup.dart';
-import 'package:project/screen/user/home.dart';
+import 'package:project/screen/user/main_layout.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../admin/widgets/dashboard_card.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -10,6 +12,8 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+
+  final supabase = Supabase.instance.client;
   // Controller များကို UI အဆင်သင့်ဖြစ်စေရန် ကြိုတင်ကြေညာထားခြင်း
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -46,23 +50,20 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 const SizedBox(height: 60),
 
-                // Image.asset(
-                //   'assets/images/cosmetic_logo.png',
-                //   width: 110,
-                //   height: 110,
-                //   fit: BoxFit.contain,
-                // ),
-                const SizedBox(height: 15),
-
-                const Text(
-                  "Beauty with me.",
-                  style: TextStyle(
-                    color: goldColor,
-                    fontSize: 26,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
-                  ),
+                Image.asset(
+                "assets/images/cosmetic_logo.png",
+                width: 220,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                "Beauty with me.",
+                style: TextStyle(
+                  fontSize: 35,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFC7A17A),
                 ),
+              ),
                 const SizedBox(height: 8),
 
                 Row(
@@ -164,11 +165,30 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 // (၈) LOG IN Button (ရွှေရောင် Gradient ဖြင့်)
                 GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => HomePage()),
-                    );
+                  onTap: () async {
+                    try {
+                      final AuthResponse res = await supabase.auth.signInWithPassword(
+                        email: _emailController.text,
+                        password: _passwordController.text,
+                      );
+                      if (res.user != null) {
+                        // Role ကို စစ်မယ်
+                        final data = await supabase.from('users').select('user_role').eq('user_id', res.user!.id).single();
+                        String role = data['user_role'];
+
+                        if (role == 'admin') {
+                          // Admin Dashboard သို့ ပို့မယ် (AdminDashboard() screen ကို အစ်မဆောက်ထားရမယ်)
+                          // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => AdminDashboard()));
+                        } else {
+                          // User ဆို MainLayout သို့ ပို့မယ်
+                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MainLayout()));
+                        }
+                      }
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(e.toString())),
+                      );
+                    }
                   },
                   child: Container(
                     width: double.infinity,
