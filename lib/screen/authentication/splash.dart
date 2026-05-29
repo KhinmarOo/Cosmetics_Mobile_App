@@ -21,7 +21,8 @@ class _SplashScreenState extends State<SplashScreen> {
             colors: [Color(0xFF554518), Color(0xFF262116), Color(0xFF554518)],
           ),
         ),
-        child: Center(
+        child: Transform.translate(
+          offset: const Offset(0, -45),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
@@ -37,7 +38,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 style: TextStyle(
                   fontSize: 35,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFFC7A17A),
+                  color: Color(0xFFD4AF37),
                 ),
               ),
               _buildElegantSubtitle(),
@@ -49,7 +50,7 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 }
 
-const Color goldColor = Color(0xFFC7A17A);
+const Color goldColor = Color(0xFFD4AF37);
 Widget _buildElegantSubtitle() {
   return Row(
     children: [

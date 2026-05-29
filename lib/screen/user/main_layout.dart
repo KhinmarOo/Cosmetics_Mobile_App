@@ -1,12 +1,12 @@
-
 import 'package:flutter/material.dart';
+import '../../components/bottom_nav_bar.dart';
+import '../../models/product_model.dart';
+import '../../services/wishlist_service.dart';
+import 'account.dart';
+import 'cart.dart';
 import 'home.dart';
 import 'product.dart';
-import '../../components/bottom_nav_bar.dart';
-import './wishlist.dart';
-import 'cart.dart';
-import 'account.dart';
-
+import 'wishlist.dart';
 
 class MainLayout extends StatefulWidget {
   const MainLayout({super.key});
@@ -16,88 +16,161 @@ class MainLayout extends StatefulWidget {
 }
 
 class _MainLayoutState extends State<MainLayout> {
-  // လက်ရှိ ရောက်နေတဲ့ page index ကို ဗဟိုကနေ ထိန်းချုပ်ရန် ကြေညာခြင်း
-  int _currentIndex = 0; 
+  int _currentIndex = 0;
+  int _previousIndex = 0;
+  final WishlistService _wishlistService = WishlistService();
+  final List<Map<String, dynamic>> _cartProducts = [];
+  final List<ProductModel> _favoritedProducts = [];
 
-  // ၁။ State ထဲမှာ Cart List ကြေညာခြင်း
-  List<Map<String, dynamic>> _cartProducts = [];
+  @override
+  void initState() {
+    super.initState();
+    _loadWishlist();
+  }
 
-  // ၂။ Add To Cart နှိပ်ရင် ပစ္စည်းအသစ်ထည့်မယ့် သို့မဟုတ် ရှိပြီးသားဆိုရင် အရေအတွက်တိုးမယ့် Function
-  void _addToCart(Map<String, dynamic> product, int quantity) {
+  void _changeTab(int index) {
+    if (index == _currentIndex) return;
+
     setState(() {
-      // Cart ထဲမှာ ပစ္စည်းအမည် တူတာ ရှိ၊ မရှိ အရင်စစ်သည်
-      final index = _cartProducts.indexWhere((item) => item["name"] == product["name"]);
+      _previousIndex = _currentIndex;
+      _currentIndex = index;
+    });
+  }
+
+  void _goBackToPreviousTab() {
+    _changeTab(_previousIndex);
+  }
+
+  void _addToCart(ProductModel product, int quantity) {
+    setState(() {
+      final index = _cartProducts.indexWhere(
+        (item) => item["id"] == product.proId,
+      );
+
       if (index >= 0) {
-        // ရှိပြီးသားဆိုရင် အရေအတွက်ပဲ ပေါင်းထည့်မည်
-        _cartProducts[index]["quantity"] = (_cartProducts[index]["quantity"] as int) + quantity;
+        _cartProducts[index]["quantity"] =
+            (_cartProducts[index]["quantity"] as int) + quantity;
       } else {
-        // မရှိသေးရင် အသစ်ထည့်မည်
-        _cartProducts.add({
-          "name": product["name"],
-          "price": product["price"],
-          "quantity": quantity,
-        });
+        _cartProducts.add(product.toCartItem(quantity));
       }
     });
   }
 
-  // ၃။ Cart Screen ထဲကနေ + / - နှိပ်ရင် အရေအတွက်ကို ပြင်ဆင်မယ့် Function
   void _updateCartQuantity(int index, int newQuantity) {
     setState(() {
       if (newQuantity <= 0) {
-        _cartProducts.removeAt(index); // အရေအတွက် ၀ ဖြစ်သွားရင် Cart ထဲမှ ဖယ်ထုတ်ခြင်း
+        _cartProducts.removeAt(index);
       } else {
-        _cartProducts[index]["quantity"] = newQuantity; // အရေအတွက် တိုး/လျော့ခြင်း
+        _cartProducts[index]["quantity"] = newQuantity;
       }
     });
   }
 
-  // အသဲပေးထားသော ပစ္စည်းများကိုသာ သိမ်းဆည်းမည့် ဗဟို List
-  final List<Map<String, String>> _favoritedProducts = [];
-
-  // အသဲပေး/ဖြုတ်ခြင်း လုပ်ဆောင်ချက် (Toggle Function)
-  void _toggleFavorite(Map<String, String> product) {
+  void _clearCart() {
     setState(() {
-      // ပစ္စည်းအမည်တူ ရှိ/မရှိ စစ်ဆေးခြင်း
-      bool isExist = _favoritedProducts.any((p) => p["name"] == product["name"]);
-      if (isExist) {
-        _favoritedProducts.removeWhere((p) => p["name"] == product["name"]); // ရှိပြီးသားဆိုရင် ဖြုတ်ပစ်မယ်
-      } else {
-        _favoritedProducts.add(product); // မရှိသေးရင် အသဲစာရင်းထဲ ထည့်မယ်
-      }
+      _cartProducts.clear();
     });
   }
-  
-  // 💡 စာမျက်နှာများကို Method အနေနဲ့ တည်ဆောက်ထားခြင်း
+
+  Future<void> _loadWishlist() async {
+    try {
+      final wishlistProducts = await _wishlistService.getWishlistProducts();
+      if (!mounted) return;
+      setState(() {
+        _favoritedProducts
+          ..clear()
+          ..addAll(wishlistProducts);
+      });
+    } catch (e) {
+      if (!mounted) return;
+      _showMessage("Wishlist load failed: $e");
+    }
+  }
+
+  void _toggleFavorite(ProductModel product) {
+    final wasFavorite = _favoritedProducts.any(
+      (item) => item.proId == product.proId,
+    );
+
+    setState(() {
+      if (wasFavorite) {
+        _favoritedProducts.removeWhere((item) => item.proId == product.proId);
+      } else {
+        _favoritedProducts.add(product);
+      }
+    });
+
+    _syncWishlistToggle(product, wasFavorite: wasFavorite);
+  }
+
+  Future<void> _syncWishlistToggle(
+    ProductModel product, {
+    required bool wasFavorite,
+  }) async {
+    try {
+      if (wasFavorite) {
+        await _wishlistService.removeWishlistProduct(product.proId);
+      } else {
+        await _wishlistService.addWishlistProduct(product.proId);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        if (wasFavorite) {
+          final exists = _favoritedProducts.any(
+            (item) => item.proId == product.proId,
+          );
+          if (!exists) _favoritedProducts.add(product);
+        } else {
+          _favoritedProducts.removeWhere((item) => item.proId == product.proId);
+        }
+      });
+      _showMessage("Wishlist update failed: $e");
+    }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   List<Widget> _pages() {
     return [
       HomeScreen(
         favoritedProducts: _favoritedProducts,
         onFavoriteToggle: _toggleFavorite,
-        // ⭐ အဆင်ပြေအောင် Type ကို အသေအချာ ညှိပေးထားပါတယ်
-        onAddToCart: (Map<String, dynamic> product, int quantity) {
-          _addToCart(product, quantity); 
+        onAddToCart: _addToCart,
+        cartItems: _cartProducts,
+        onCartPressed: () {
+          _changeTab(3);
         },
         onSeeMore: () {
-          setState(() {
-            _currentIndex = 1; 
-          });
+          _changeTab(1);
         },
       ),
       ProductScreen(
         favoritedProducts: _favoritedProducts,
         onFavoriteToggle: _toggleFavorite,
-        onAddToCart: _addToCart, // 👈 အခုလို တိုက်ရိုက် တန်းပေးလိုက်ရုံပါပဲဗျာ!
+        onAddToCart: _addToCart,
         cartItems: _cartProducts,
         onUpdateQuantity: _updateCartQuantity,
+        onCartPressed: () {
+          _changeTab(3);
+        },
+        onBackPressed: _goBackToPreviousTab,
       ),
       WishlistScreen(
         favoritedProducts: _favoritedProducts,
         onFavoriteToggle: _toggleFavorite,
+        onAddToCart: _addToCart,
+        onBackPressed: _goBackToPreviousTab,
       ),
       CartScreen(
         cartItems: _cartProducts,
         onUpdateQuantity: _updateCartQuantity,
+        onBackPressed: _goBackToPreviousTab,
+        onOrderCompleted: _clearCart,
       ),
       const AccountPage(),
     ];
@@ -106,19 +179,10 @@ class _MainLayoutState extends State<MainLayout> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        // ⭐ ပြင်ဆင်ပြီး - အောက်က _pages အနောက်မှာ ကွင်းစကွင်းပိတ် () လေး ထည့်ပေးလိုက်ပါပြီ။ ဒါဆို MainLayout ထဲက နီတာတွေ အကုန်ပျောက်ပါပြီခင်ဗျာ။
-        children: _pages(), 
-      ),
-      
+      body: IndexedStack(index: _currentIndex, children: _pages()),
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index; 
-          });
-        },
+        onTap: _changeTab,
       ),
     );
   }

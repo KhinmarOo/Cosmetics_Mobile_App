@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 class CustomBottomNavBar extends StatelessWidget {
@@ -19,17 +18,17 @@ class CustomBottomNavBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(
-          top: Radius.circular(30)
+          top: Radius.circular(30),
         ), // ဘေးထောင့် ဝိုင်းဝိုင်းလေး
         border: Border(
           top: BorderSide(
             color: Color(0xFFD4AF37),
             // width: 2.0,
-          )
+          ),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             spreadRadius: 2,
             offset: const Offset(0, 3),
@@ -37,13 +36,30 @@ class CustomBottomNavBar extends StatelessWidget {
         ],
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround, // အကွာအဝေး ညီညီညာညာခွဲရန်
+        mainAxisAlignment:
+            MainAxisAlignment.spaceAround, // အကွာအဝေး ညီညီညာညာခွဲရန်
         children: [
           _buildNavItem(index: 0, icon: Icons.home_filled, label: 'Home'),
-          _buildNavItem(index: 1, icon: Icons.all_inbox_rounded, label: 'Product'),
-          _buildNavItem(index: 2, icon: Icons.favorite_border_rounded, label: 'Wishlist'),
-          _buildNavItem(index: 3, icon: Icons.shopping_cart_outlined, label: 'Cart'),
-          _buildNavItem(index: 4, icon: Icons.person_outline_rounded, label: 'Account'),
+          _buildNavItem(
+            index: 1,
+            icon: Icons.all_inbox_rounded,
+            label: 'Product',
+          ),
+          _buildNavItem(
+            index: 2,
+            icon: Icons.favorite_border_rounded,
+            label: 'Wishlist',
+          ),
+          _buildNavItem(
+            index: 3,
+            icon: Icons.shopping_cart_outlined,
+            label: 'Cart',
+          ),
+          _buildNavItem(
+            index: 4,
+            icon: Icons.person_outline_rounded,
+            label: 'Account',
+          ),
         ],
       ),
     );
@@ -56,6 +72,7 @@ class CustomBottomNavBar extends StatelessWidget {
     required String label,
   }) {
     final bool isSelected = currentIndex == index;
+    const inactiveColor = Color(0xFFD4AF37);
 
     return GestureDetector(
       onTap: () => onTap(index),
@@ -85,7 +102,9 @@ class CustomBottomNavBar extends StatelessWidget {
             Icon(
               icon,
               size: 22,
-              color: isSelected ? const Color(0xFF2D1D15) : Colors.grey.withOpacity(0.7),
+              color: isSelected
+                  ? const Color(0xFF2D1D15)
+                  : inactiveColor.withValues(alpha: 0.72),
             ),
             const SizedBox(height: 4),
             Text(
@@ -93,7 +112,9 @@ class CustomBottomNavBar extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color: isSelected ? const Color(0xFF2D1D15) : Colors.grey.withOpacity(0.7),
+                color: isSelected
+                    ? const Color(0xFF2D1D15)
+                    : inactiveColor.withValues(alpha: 0.72),
               ),
             ),
           ],

@@ -1,50 +1,37 @@
 import 'package:flutter/material.dart';
 import '../../../components/add_card_button.dart';
+import '../../../models/product_model.dart';
 import '../product_details.dart';
 
 class ProductSection extends StatelessWidget {
   final String title;
-  final VoidCallback? onSeeMore; 
-  final List<Map<String, String>> favoritedProducts; 
-  final Function(Map<String, String>) onFavoriteToggle;
-  
-  // ⭐ အဓိကပြင်ဆင်ချက် - home.dart နဲ့ ကိုက်ညီအောင် Parameter ၂ ခု (Map, int) လက်ခံဖို့ သေချာပြောင်းလိုက်ပါတယ်
-  final Function(Map<String, dynamic>, int) onAddToCart; 
+  final List<ProductModel> products;
+  final VoidCallback? onSeeMore;
+  final List<ProductModel> favoritedProducts;
+  final ValueChanged<ProductModel> onFavoriteToggle;
+  final void Function(ProductModel product, int quantity) onAddToCart;
 
   const ProductSection({
-    super.key, 
+    super.key,
     required this.title,
+    required this.products,
     this.onSeeMore,
     required this.favoritedProducts,
     required this.onFavoriteToggle,
-    required this.onAddToCart, // <--- ပါဝင်ပြီးသားအတိုင်း ထားရှိပါသည်
+    required this.onAddToCart,
   });
 
   @override
   Widget build(BuildContext context) {
-    // နမူနာ ထည့်သွင်းထားသော ပစ္စည်းများစာရင်း
-    final List<Map<String, String>> dummyProducts = [
-      {
-        "name": "Romand Zero Matte Lipstick",
-        "price": "32,000 MMK",
-        "brand": "Rom&nd"
-      },
-      {
-        "name": "Novo Cushion Cream",
-        "price": "14,500 MMK",
-        "brand": "Novo"
-      },
-      {
-        "name": "Cutapro Sunscreen SPF 50++",
-        "price": "32,000 MMK",
-        "brand": "CutaPro"
-      },
-      {
-        "name": "Maybelline Liquid Foundation",
-        "price": "25,000 MMK",
-        "brand": "Maybelline"
-      },
-    ];
+    if (products.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Text(
+          "$title not available",
+          style: const TextStyle(color: Colors.grey, fontSize: 13),
+        ),
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -56,136 +43,264 @@ class ProductSection extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF2D1D15)),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2D1D15),
+                ),
               ),
-              if (title == "Popular Products")
+              if (onSeeMore != null)
                 TextButton(
                   onPressed: onSeeMore,
-                  child: const Text("See More..", style: TextStyle(color: Colors.blue, fontSize: 12)),
+                  child: const Text(
+                    "See More..",
+                    style: TextStyle(color: Colors.blue, fontSize: 12),
+                  ),
                 ),
             ],
           ),
         ),
-        
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 15),
           child: GridView.builder(
             shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(), 
-            itemCount: dummyProducts.length,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: products.length,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              childAspectRatio: 0.7,
+              childAspectRatio: 0.64,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
             ),
             itemBuilder: (context, index) {
-              final product = dummyProducts[index];
-              
-              // ၎င်းပစ္စည်းကို အသဲပေးထားပြီးပြီလား စစ်ဆေးခြင်း
-              final bool isFav = favoritedProducts.any((p) => p["name"] == product["name"]);
-              return GestureDetector(
-                onTap: (){
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => 
-                    ProductDetailsScreen(
-                      product: product,
-                      onAddToCart: (prod, qty) {
-                          onAddToCart(Map<String, dynamic>.from(prod), qty);
-                        },
-                    ))
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFFFFF),
-                    borderRadius: BorderRadius.circular(15),
-                    border: Border.all(color: const Color(0xFFD4AF37).withOpacity(0.2)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: GestureDetector(
-                          onTap: () {
-                            onFavoriteToggle(product); 
-                          },
-                          child: Icon(
-                            isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded, 
-                            size: 20, 
-                            color: isFav ? const Color(0xFFE6B31E) : const Color(0xFFC7A17A),
-                          ),
-                        ),
-                      ),
-                      const Expanded(
-                        child: Center(
-                          child: Icon(Icons.spa_outlined, size: 50, color: Color(0xFFC7A17A)),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        product["name"]!,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        product["price"]!,
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF2D1D15)),
-                      ),
-                      const SizedBox(height: 8),
-                      
-                      AddCardButton(
-                        onTap: () {
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return AlertDialog(
-                                backgroundColor: const Color(0xFFFFFCF2),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                                title: const Text(
-                                  "Add to Cart?",
-                                  style: TextStyle(color: Color(0xFF2D1D15), fontWeight: FontWeight.bold, fontSize: 18),
-                                ),
-                                content: Text(
-                                  "Do you want to add '${product["name"]}' to your shopping cart?",
-                                  style: const TextStyle(color: Color(0xFF2D1D15), fontSize: 14),
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(context); 
-                                    },
-                                    child: const Text("Cancel", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
-                                  ),
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(context); 
-                                      
-                                      // ⭐ ဗဟိုကို အရေအတွက် ၁ ခုနဲ့အတူ ပေးပို့လိုက်ပါတယ်
-                                      onAddToCart(Map<String, dynamic>.from(product), 1);
-
-                                    },
-                                    child: const Text("Add", style: TextStyle(color: Color(0xFFD4AF37), fontWeight: FontWeight.bold)),
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-                        },
-                      ),
-                    ],
-                  ),
+              return _ProductCard(
+                product: products[index],
+                isFavorite: favoritedProducts.any(
+                  (item) => item.proId == products[index].proId,
                 ),
+                onFavoriteToggle: onFavoriteToggle,
+                onAddToCart: onAddToCart,
               );
             },
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ProductCard extends StatelessWidget {
+  final ProductModel product;
+  final bool isFavorite;
+  final ValueChanged<ProductModel> onFavoriteToggle;
+  final void Function(ProductModel product, int quantity) onAddToCart;
+
+  const _ProductCard({
+    required this.product,
+    required this.isFavorite,
+    required this.onFavoriteToggle,
+    required this.onAddToCart,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const goldColor = Color(0xFFD4AF37);
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProductDetailsScreen(
+              product: product,
+              onAddToCart: onAddToCart,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: goldColor.withValues(alpha: 0.2)),
+        ),
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: GestureDetector(
+                      onTap: () => onFavoriteToggle(product),
+                      child: Icon(
+                        isFavorite
+                            ? Icons.favorite_rounded
+                            : Icons.favorite_border_rounded,
+                        size: 20,
+                        color: isFavorite ? const Color(0xFFE6B31E) : goldColor,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: _ProductImage(
+                        imageUrl: product.proImage,
+                        size: 82,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    product.proName,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF2D1D15),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  _ProductPrice(product: product),
+                  const SizedBox(height: 8),
+                  AddCardButton(
+                    onTap: () => _confirmAddToCart(context, product),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmAddToCart(BuildContext context, ProductModel product) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFFFFFCF2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          title: const Text(
+            "Add to Cart?",
+            style: TextStyle(
+              color: Color(0xFF2D1D15),
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
+          content: Text(
+            "Do you want to add '${product.proName}' to your shopping cart?",
+            style: const TextStyle(color: Color(0xFF2D1D15), fontSize: 14),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                "Cancel",
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                onAddToCart(product, 1);
+              },
+              child: const Text(
+                "Add",
+                style: TextStyle(
+                  color: Color(0xFFD4AF37),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ProductPrice extends StatelessWidget {
+  final ProductModel product;
+
+  const _ProductPrice({required this.product});
+
+  @override
+  Widget build(BuildContext context) {
+    if (!product.hasSale) {
+      return Text(
+        product.displayPrice,
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF2D1D15),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          product.displayPrice,
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF2D1D15),
+            decoration: TextDecoration.lineThrough,
+            decorationThickness: 1.4,
+          ),
+        ),
+        Text(
+          product.displaySalePrice,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Colors.red,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ProductImage extends StatelessWidget {
+  final String imageUrl;
+  final double size;
+
+  const _ProductImage({required this.imageUrl, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    if (imageUrl.isEmpty) {
+      return const Icon(Icons.spa_outlined, size: 55, color: Color(0xFFD4AF37));
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: Image.network(
+        imageUrl,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return const Icon(
+            Icons.broken_image_outlined,
+            size: 48,
+            color: Color(0xFFD4AF37),
+          );
+        },
+      ),
     );
   }
 }

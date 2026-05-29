@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:project/screen/admin/admin_dashboard.dart';
 import 'package:project/screen/authentication/signup.dart';
 import 'package:project/screen/user/main_layout.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../admin/widgets/dashboard_card.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,15 +12,74 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-
   final supabase = Supabase.instance.client;
-  // Controller များကို UI အဆင်သင့်ဖြစ်စေရန် ကြိုတင်ကြေညာထားခြင်း
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
 
-  // သတ်မှတ်ထားသော အရောင်များ
-  static const Color goldColor = Color(0xFFE6B31E);
-  static const Color inputBorderColor = Color(0xFFC7A17A);
+  static const Color goldColor = Color(0xFFD4AF37);
+  static const Color inputBorderColor = Color(0xFFD4AF37);
+
+  Future<void> _login() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      _showMessage("Please enter email and password");
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final res = await supabase.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+
+      final user = res.user;
+      if (user == null) {
+        throw const AuthException("Login failed");
+      }
+
+      final data = await supabase
+          .from('users')
+          .select('user_role')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+      final role = data?['user_role']?.toString() ?? 'user';
+
+      if (!mounted) return;
+
+      if (role == 'admin') {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
+          (route) => false,
+        );
+      } else {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const MainLayout()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _showMessage(e.toString());
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +87,6 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        // (၁) နောက်ခံ Gradient သတ်မှတ်ခြင်း
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -38,7 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Color(0xFF262116),
               Color(0xFF262116),
               Color(0xFF262116),
-              Color(0xFF554518), // အောက်ဘက် အမည်းရောင်သန်းသောအရောင်
+              Color(0xFF554518),
             ],
           ),
         ),
@@ -49,26 +107,24 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const SizedBox(height: 60),
-
                 Image.asset(
-                "assets/images/cosmetic_logo.png",
-                width: 220,
-                fit: BoxFit.contain,
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                "Beauty with me.",
-                style: TextStyle(
-                  fontSize: 35,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFFC7A17A),
+                  "assets/images/cosmetic_logo.png",
+                  width: 220,
+                  fit: BoxFit.contain,
                 ),
-              ),
+                const SizedBox(height: 20),
+                const Text(
+                  "Beauty with me.",
+                  style: TextStyle(
+                    fontSize: 35,
+                    fontWeight: FontWeight.bold,
+                    color: goldColor,
+                  ),
+                ),
                 const SizedBox(height: 8),
-
-                Row(
+                const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
+                  children: [
                     Expanded(
                       child: Divider(
                         color: goldColor,
@@ -97,99 +153,34 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
                 const SizedBox(height: 60),
-
-                TextFormField(
+                _buildInput(
                   controller: _emailController,
-                  style: const TextStyle(color: Colors.white, fontSize: 15),
-                  decoration: InputDecoration(
-                    hintText: "Email",
-                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 14),
-                    prefixIcon: const Icon(Icons.email_outlined, color: goldColor, size: 22),
-                    filled: true,
-                    fillColor: Colors.black.withOpacity(0.2),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: inputBorderColor, width: 1),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: inputBorderColor, width: 1.5),
-                    ),
-                  ),
+                  hintText: "Email",
+                  icon: Icons.email_outlined,
+                  keyboardType: TextInputType.emailAddress,
                 ),
                 const SizedBox(height: 20),
-
-                // (၆) Password Input Field
-                TextFormField(
+                _buildInput(
                   controller: _passwordController,
-                  obscureText: true, // စာလုံးများ ဖျောက်ထားရန်
-                  style: const TextStyle(color: Colors.white, fontSize: 15),
-                  decoration: InputDecoration(
-                    hintText: "Password",
-                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 14),
-                    prefixIcon: const Icon(Icons.lock_outline, color: goldColor, size: 22),
-                    filled: true,
-                    fillColor: Colors.black.withOpacity(0.2),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: inputBorderColor, width: 1),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: inputBorderColor, width: 1.5),
-                    ),
-                  ),
+                  hintText: "Password",
+                  icon: Icons.lock_outline,
+                  obscureText: true,
                 ),
                 const SizedBox(height: 12),
-
-                // (၇) Forgot Password? စာသား
                 Align(
                   alignment: Alignment.centerRight,
-                  child: GestureDetector(
-                    onTap: () {
-                      // Forgot password နှိပ်ရင် လုပ်မယ့်အလုပ်
-                    },
-                    child: Text(
-                      "Forgot password?",
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.8),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w400,
-                      ),
+                  child: Text(
+                    "Forgot password?",
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.8),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                 ),
                 const SizedBox(height: 40),
-
-                // (၈) LOG IN Button (ရွှေရောင် Gradient ဖြင့်)
                 GestureDetector(
-                  onTap: () async {
-                    try {
-                      final AuthResponse res = await supabase.auth.signInWithPassword(
-                        email: _emailController.text,
-                        password: _passwordController.text,
-                      );
-                      if (res.user != null) {
-                        // Role ကို စစ်မယ်
-                        final data = await supabase.from('users').select('user_role').eq('user_id', res.user!.id).single();
-                        String role = data['user_role'];
-
-                        if (role == 'admin') {
-                          // Admin Dashboard သို့ ပို့မယ် (AdminDashboard() screen ကို အစ်မဆောက်ထားရမယ်)
-                          // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => AdminDashboard()));
-                        } else {
-                          // User ဆို MainLayout သို့ ပို့မယ်
-                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MainLayout()));
-                        }
-                      }
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(e.toString())),
-                      );
-                    }
-                  },
+                  onTap: _isLoading ? null : _login,
                   child: Container(
                     width: double.infinity,
                     height: 50,
@@ -197,42 +188,56 @@ class _LoginScreenState extends State<LoginScreen> {
                       borderRadius: BorderRadius.circular(10),
                       gradient: const LinearGradient(
                         colors: [
-                          Color(0xFFE6B31E), // ရွှေဝါရောင် ဖျော့
+                          Color(0xFFE6B31E),
                           Color(0xFFF7F1E3),
-                          Color(0xFFE6B31E), // ရွှေအိုရောင် ရင့်
+                          Color(0xFFE6B31E),
                         ],
                       ),
                     ),
-                    child: const Center(
-                      child: Text(
-                        "LOG IN",
-                        style: TextStyle(
-                          color: Color(0xFF2D1D15), // စာသားကို နောက်ခံနှင့်လိုက်ဖက်အောင် ညိုမှောင်ရောင် သုံးထားပါတယ်
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.0,
-                        ),
-                      ),
+                    child: Center(
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                color: Color(0xFF2D1D15),
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text(
+                              "LOG IN",
+                              style: TextStyle(
+                                color: Color(0xFF2D1D15),
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 25),
-
-                // (၉) Don't have an account? SignUp.. စာသား
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       "Don't have an account? ",
-                      style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.8),
+                        fontSize: 14,
+                      ),
                     ),
                     GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context ,
-                          MaterialPageRoute(builder: (context) => const SignupScreen()),
-                        );// SignUp Page သို့ သွားရန် ရေးရမည့်နေရာ
-                      },
+                      onTap: _isLoading
+                          ? null
+                          : () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const SignupScreen(),
+                                ),
+                              );
+                            },
                       child: const Text(
                         "SignUp..",
                         style: TextStyle(
@@ -248,6 +253,41 @@ class _LoginScreenState extends State<LoginScreen> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInput({
+    required TextEditingController controller,
+    required String hintText,
+    required IconData icon,
+    bool obscureText = false,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return TextFormField(
+      controller: controller,
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      enabled: !_isLoading,
+      style: const TextStyle(color: Colors.white, fontSize: 15),
+      decoration: InputDecoration(
+        hintText: hintText,
+        hintStyle: TextStyle(
+          color: Colors.white.withOpacity(0.5),
+          fontSize: 14,
+        ),
+        prefixIcon: Icon(icon, color: goldColor, size: 22),
+        filled: true,
+        fillColor: Colors.black.withOpacity(0.2),
+        contentPadding: const EdgeInsets.symmetric(vertical: 16),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: inputBorderColor, width: 1),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: inputBorderColor, width: 1.5),
         ),
       ),
     );

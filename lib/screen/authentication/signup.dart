@@ -10,16 +10,14 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
-
   final supabase = Supabase.instance.client;
-  // Input Controller များ
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  // သတ်မှတ်ထားသော ရွှေအိုရောင် ကုဒ်
-  static const Color goldColor = Color(0xFFE6B31E);
+  static const Color goldColor = Color(0xFFD4AF37);
+  static const Color inputBorderColor = Color(0xFFD4AF37);
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +25,6 @@ class _SignupScreenState extends State<SignupScreen> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        // နောက်ခံ Gradient
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -49,16 +46,14 @@ class _SignupScreenState extends State<SignupScreen> {
               children: [
                 const SizedBox(height: 40),
 
-                // (၁) Logo
                 Image.asset(
                   'assets/images/cosmetic_logo.png',
-                  width: 100,
-                  height: 100,
+                  width: 140,
+                  height: 140,
                   fit: BoxFit.contain,
                 ),
                 const SizedBox(height: 15),
 
-                // (၂) Beauty with me. စာသား
                 const Text(
                   "Beauty with me.",
                   style: TextStyle(
@@ -70,12 +65,16 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
                 const SizedBox(height: 8),
 
-                // (၃) Your Journey to Elegant မျဉ်းကြောင်း
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: const [
                     Expanded(
-                      child: Divider(color: goldColor, thickness: 0.8, indent: 10, endIndent: 10),
+                      child: Divider(
+                        color: goldColor,
+                        thickness: 0.8,
+                        indent: 10,
+                        endIndent: 10,
+                      ),
                     ),
                     Text(
                       "Your Journey to Elegant",
@@ -87,13 +86,17 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                     ),
                     Expanded(
-                      child: Divider(color: goldColor, thickness: 0.8, indent: 10, endIndent: 10),
+                      child: Divider(
+                        color: goldColor,
+                        thickness: 0.8,
+                        indent: 10,
+                        endIndent: 10,
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 40),
 
-                // (၄) User Name Field (Underline Border)
                 _buildUnderlineTextField(
                   controller: _nameController,
                   hintText: "User Name",
@@ -101,7 +104,6 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
                 const SizedBox(height: 15),
 
-                // (၅) Email Field
                 _buildUnderlineTextField(
                   controller: _emailController,
                   hintText: "Email",
@@ -110,7 +112,6 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
                 const SizedBox(height: 15),
 
-                // (၆) Phone Field
                 _buildUnderlineTextField(
                   controller: _phoneController,
                   hintText: "Phone",
@@ -119,7 +120,6 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
                 const SizedBox(height: 15),
 
-                // (၇) Password Field
                 _buildUnderlineTextField(
                   controller: _passwordController,
                   hintText: "Password",
@@ -128,14 +128,15 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
 
                 const SizedBox(height: 45),
-
-                // (၉) Create Account Button (ရွှေရောင် Gradient)
                 GestureDetector(
                   onTap: () async {
-                    // Password ၆ လုံးထက်နည်းရင် Error တက်စေဖို့ (ဒါလေးက အရေးကြီးပါတယ်)
                     if (_passwordController.text.length < 6) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Password သည် အနည်းဆုံး ၆ လုံး ဖြစ်ရမည်။")),
+                        const SnackBar(
+                          content: Text(
+                            "Password သည် အနည်းဆုံး ၆ လုံး ဖြစ်ရမည်။",
+                          ),
+                        ),
                       );
                       return;
                     }
@@ -157,11 +158,13 @@ class _SignupScreenState extends State<SignupScreen> {
                           'user_role': 'user',
                         });
                         print("Database ထဲ Data ရောက်သွားပါပြီ!");
-                        
+
                         // အောင်မြင်ရင် Login စာမျက်နှာကို သွားမယ်
                         Navigator.pushReplacement(
-                          context, 
-                          MaterialPageRoute(builder: (context) => const LoginScreen())
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const LoginScreen(),
+                          ),
                         );
                       }
                     } catch (e) {
@@ -199,17 +202,18 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
                 const SizedBox(height: 25),
 
-                // (၁၀) Already have an account? Login..
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       "Already have an account?  ",
-                      style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.8),
+                        fontSize: 14,
+                      ),
                     ),
                     GestureDetector(
                       onTap: () {
-                        // Login စာမျက်နှာသို့ ပြန်သွားရန် ရေးရမည့်နေရာ
                         Navigator.pop(context);
                       },
                       child: const Text(
@@ -232,7 +236,6 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  // Underline Border Text Field များအတွက် Custom Function (ကုဒ်များ ထပ်မနေစေရန်)
   Widget _buildUnderlineTextField({
     required TextEditingController controller,
     required String hintText,
@@ -247,15 +250,17 @@ class _SignupScreenState extends State<SignupScreen> {
       style: const TextStyle(color: Colors.white, fontSize: 15),
       decoration: InputDecoration(
         hintText: hintText,
-        hintStyle: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 14),
+        hintStyle: TextStyle(
+          color: Colors.white.withOpacity(0.4),
+          fontSize: 14,
+        ),
         prefixIcon: Icon(icon, color: goldColor, size: 22),
         contentPadding: const EdgeInsets.symmetric(vertical: 12),
-        // အောက်ခြေ မျဉ်းကြောင်းပုံစံ ပြုလုပ်ခြင်း
         enabledBorder: const UnderlineInputBorder(
-          borderSide: BorderSide(color: goldColor, width: 1),
+          borderSide: BorderSide(color: inputBorderColor, width: 1),
         ),
         focusedBorder: const UnderlineInputBorder(
-          borderSide: BorderSide(color: goldColor, width: 1.8),
+          borderSide: BorderSide(color: inputBorderColor, width: 1.8),
         ),
       ),
     );

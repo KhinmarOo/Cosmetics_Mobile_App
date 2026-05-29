@@ -1,26 +1,27 @@
-
 import 'package:flutter/material.dart';
-import 'package:project/screen/user/product_details.dart';
 import '../../components/add_card_button.dart';
-import 'cart.dart';
+import '../../models/product_model.dart';
+import '../../services/product_service.dart';
+import 'product_details.dart';
 
 class ProductScreen extends StatefulWidget {
-  final List<Map<String, String>> favoritedProducts;
-  final Function(Map<String, String>) onFavoriteToggle;
-  
-  // ⭐ ပြင်ဆင်ပြီး - MainLayout ကဲ့သို့ Parameter နှစ်ခု (product, quantity) လက်ခံရန် ပြောင်းလဲလိုက်ပါတယ်
-  final Function(Map<String, dynamic>, int) onAddToCart;
-  
+  final List<ProductModel> favoritedProducts;
+  final ValueChanged<ProductModel> onFavoriteToggle;
+  final void Function(ProductModel product, int quantity) onAddToCart;
   final List<Map<String, dynamic>> cartItems;
   final Function(int, int) onUpdateQuantity;
+  final VoidCallback onCartPressed;
+  final VoidCallback onBackPressed;
 
   const ProductScreen({
     super.key,
     required this.favoritedProducts,
     required this.onFavoriteToggle,
-    required this.onAddToCart, // <--- မူလအတိုင်း ထားရှိပါမည်
-    required this.cartItems,      
+    required this.onAddToCart,
+    required this.cartItems,
     required this.onUpdateQuantity,
+    required this.onCartPressed,
+    required this.onBackPressed,
   });
 
   @override
@@ -28,37 +29,37 @@ class ProductScreen extends StatefulWidget {
 }
 
 class _ProductScreenState extends State<ProductScreen> {
-  int _currentNavIndex = 1;
+  final ProductService _productService = ProductService();
+  final TextEditingController _searchController = TextEditingController();
+  late Future<List<ProductModel>> _productsFuture;
+  String _searchQuery = '';
 
-  final List<Map<String, String>> allProducts = [
-    {"name": "Novo Cushion Cream", "price": "14,500 MMK"},
-    {"name": "Neon Resplendent Light Lipstick", "price": "9,700 MMK"},
-    {"name": "Novo Waterproof Eyebrow", "price": "7,000 MMK"},
-    {"name": "Novo Mushroom Head Cushion", "price": "6,200 MMK"},
-    {"name": "Romand See-Through Matte Tint", "price": "32,000 MMK"},
-    {"name": "Romand Juicy Lasting Tint", "price": "32,000 MMK"},
-    {"name": "Romand Dewyful Water Tint", "price": "35,000 MMK"},
-    {"name": "Cutapro Sensitive Moisturizer 120 ml", "price": "35,000 MMK"},
-    {"name": "Cutapro Alcohol Moisturizer 150 ml", "price": "35,000 MMK"},
-    {"name": "Cutapro Sunscreen SPF 50++ 30 ml", "price": "32,000 MMK"},
-    {"name": "Cutapro Vitamin C 30 ml", "price": "43,000 MMK"},
-    {"name": "Fraijour Retin-Collagen Cleanser 250g", "price": "31,200 MMK"},
-    {"name": "Fraijour Jelly Ice Cream 100m", "price": "39,000 MMK"},
-    {"name": "Fraijour Wormwood Calming Toner 500ml", "price": "43,100 MMK"},
-    {"name": "Vaseline Gluta-Hya Radiance Perfector Lotion", "price": "39,000 MMK"},
-    {"name": "Vaseline Flawless Glow Body Serum", "price": "31,500 MMK"},
-    {"name": "Maybelline Fit Me Matte Foundation 30 ml", "price": "85,000 MMK"},
-    {"name": "Maybelline Lasting Fix Loose Powder", "price": "52,000 MMK"},
-    {"name": "Maybelline Color Sensational Creamy Matte Lipstick", "price": "21,000 MMK"},
-    {"name": "Maybelline Sky High Waterproof Mascara", "price": "36,500 MMK"},
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _productsFuture = _productService.getProductsWithOffers();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  int _cartItemCount() {
+    return widget.cartItems.fold<int>(
+      0,
+      (total, item) => total + (item["quantity"] as int? ?? 0),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    const Color goldColor = Color(0xFFD4AF37);
+    const goldColor = Color(0xFFD4AF37);
+    final cartCount = _cartItemCount();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFFFF), 
+      backgroundColor: const Color(0xFFFFFCF2),
       body: SafeArea(
         child: Column(
           children: [
@@ -70,10 +71,12 @@ class _ProductScreenState extends State<ProductScreen> {
                   Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: goldColor, size: 20),
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
+                        icon: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: goldColor,
+                          size: 20,
+                        ),
+                        onPressed: widget.onBackPressed,
                       ),
                       const Text(
                         "All Products",
@@ -85,14 +88,13 @@ class _ProductScreenState extends State<ProductScreen> {
                       ),
                     ],
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.shopping_cart_outlined, color: goldColor),
-                    onPressed: () {},
+                  _CartIconButton(
+                    count: cartCount,
+                    onPressed: widget.onCartPressed,
                   ),
                 ],
               ),
             ),
-
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Container(
@@ -107,10 +109,18 @@ class _ProductScreenState extends State<ProductScreen> {
                     ],
                   ),
                 ),
-                child: const TextField(
-                  decoration: InputDecoration(
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (value) {
+                    setState(() => _searchQuery = value);
+                  },
+                  textInputAction: TextInputAction.search,
+                  decoration: const InputDecoration(
                     hintText: "Search",
-                    hintStyle: TextStyle(color: Color(0xFF2D1D15), fontSize: 14),
+                    hintStyle: TextStyle(
+                      color: Color(0xFF2D1D15),
+                      fontSize: 14,
+                    ),
                     prefixIcon: Icon(Icons.search, color: Color(0xFF2D1D15)),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.symmetric(vertical: 10),
@@ -119,138 +129,350 @@ class _ProductScreenState extends State<ProductScreen> {
               ),
             ),
             const SizedBox(height: 15),
-
             Expanded(
-              child: GridView.builder(
-                padding: const EdgeInsets.only(left: 15, right: 15, bottom: 100),
-                itemCount: allProducts.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,          
-                  childAspectRatio: 0.68,      
-                  crossAxisSpacing: 12,        
-                  mainAxisSpacing: 12,         
-                ),
-                itemBuilder: (context, index) {
-                  final product = allProducts[index];
-                  final bool isFav = widget.favoritedProducts.any((p) => p["name"] == product["name"]);
-                  return GestureDetector(
-                    onTap: (){
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context)=> ProductDetailsScreen(
-                          product: product,
-                          // ⭐ ပြင်ဆင်ပြီး - Detail Screen ဘက်က Argument အမျိုးအစားနဲ့ ကွက်တိ ကိုက်ညီသွားအောင် ပြောင်းလဲပေးထားပါတယ်
-                          onAddToCart: (prod, qty) {
-                            widget.onAddToCart(Map<String, dynamic>.from(prod), qty);
-                          },
-                        ))
+              child: FutureBuilder<List<ProductModel>>(
+                future: _productsFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Text(
+                          "Failed to load products: ${snapshot.error}",
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    );
+                  }
+
+                  final products = (snapshot.data ?? [])
+                      .where((product) => _matchesProductSearch(product))
+                      .toList();
+                  if (products.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        "No products found",
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    );
+                  }
+
+                  return GridView.builder(
+                    padding: const EdgeInsets.only(
+                      left: 15,
+                      right: 15,
+                      bottom: 100,
+                    ),
+                    itemCount: products.length,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 0.62,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                        ),
+                    itemBuilder: (context, index) {
+                      final product = products[index];
+                      final isFav = widget.favoritedProducts.any(
+                        (item) => item.proId == product.proId,
+                      );
+
+                      return _ProductCard(
+                        product: product,
+                        isFavorite: isFav,
+                        onFavoriteToggle: widget.onFavoriteToggle,
+                        onAddToCart: widget.onAddToCart,
                       );
                     },
-                    child: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFFFFF),
-                        borderRadius: BorderRadius.circular(15),
-                        border: Border.all(color: goldColor.withOpacity(0.2)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: GestureDetector(
-                              onTap: (){
-                                widget.onFavoriteToggle(product);
-                              },
-                              child: Icon(
-                                isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded, 
-                                size: 20, 
-                                color: isFav ? const Color(0xFFE6B31E) : goldColor,
-                              ),
-                            ),
-                          ),
-                          
-                          const Expanded(
-                            child: Center(
-                              child: Icon(
-                                Icons.spa_outlined, 
-                                size: 55, 
-                                color: goldColor,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-
-                          Text(
-                            product["name"]!,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 12, 
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF2D1D15),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-
-                          Text(
-                            product["price"]!,
-                            style: const TextStyle(
-                              fontSize: 12, 
-                              fontWeight: FontWeight.bold, 
-                              color: Color(0xFF2D1D15),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-
-                          AddCardButton(
-                            onTap: () {
-                              showDialog(
-                                context: context,
-                                builder: (BuildContext context) {
-                                  return AlertDialog(
-                                    backgroundColor: const Color(0xFFFFFCF2),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                                    title: const Text(
-                                      "Add to Cart?",
-                                      style: TextStyle(color: Color(0xFF2D1D15), fontWeight: FontWeight.bold, fontSize: 18),
-                                    ),
-                                    content: Text(
-                                      "Do you want to add '${product["name"]}' to your shopping cart?",
-                                      style: const TextStyle(color: Color(0xFF2D1D15), fontSize: 14),
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () {
-                                          Navigator.pop(context); 
-                                        },
-                                        child: const Text("Cancel", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
-                                      ),
-                                      TextButton(
-                                        onPressed: () {
-                                          Navigator.pop(context); 
-                                          
-                                          // ⭐ ပြင်ဆင်ပြီး - Map ပြောင်းလဲခြင်းနှင့် အရေအတွက် 1 ကို လှမ်းထည့်တာ အခုဆို အနီရောင် ပျောက်သွားပါပြီဗျာ
-                                          widget.onAddToCart(Map<String, dynamic>.from(product), 1);
-                                          
-                                        },
-                                        child: const Text("Add", style: TextStyle(color: Color(0xFFD4AF37), fontWeight: FontWeight.bold)),
-                                      ),
-                                    ],
-                                  );
-                                },
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
                   );
                 },
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  bool _matchesProductSearch(ProductModel product) {
+    final normalizedQuery = _normalizeSearchText(_searchQuery);
+    if (normalizedQuery.isEmpty) return true;
+
+    final searchableText = _normalizeSearchText(
+      "${product.proName} ${product.proDescription} ${product.displayPrice}",
+    );
+    final compactQuery = normalizedQuery.replaceAll(' ', '');
+    final compactText = searchableText.replaceAll(' ', '');
+
+    if (searchableText.contains(normalizedQuery) ||
+        compactText.contains(compactQuery)) {
+      return true;
+    }
+
+    final queryWords = normalizedQuery
+        .split(' ')
+        .where((word) => word.isNotEmpty);
+    return queryWords.every(searchableText.contains);
+  }
+
+  String _normalizeSearchText(String value) {
+    return value
+        .toLowerCase()
+        .replaceAll(RegExp(r'[-_]+'), ' ')
+        .replaceAll(RegExp(r'[.,/#!$%^&*;:{}=+`~()\[\]<>?|"\\]+'), ' ')
+        .trim()
+        .replaceAll(RegExp(r'\s+'), ' ');
+  }
+}
+
+class _CartIconButton extends StatelessWidget {
+  final int count;
+  final VoidCallback onPressed;
+
+  const _CartIconButton({required this.count, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    const goldColor = Color(0xFFD4AF37);
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.shopping_cart_outlined, color: goldColor),
+          onPressed: onPressed,
+        ),
+        if (count > 0)
+          Positioned(
+            top: 2,
+            right: 2,
+            child: Container(
+              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              decoration: const BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                count > 99 ? "99+" : "$count",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _ProductCard extends StatelessWidget {
+  final ProductModel product;
+  final bool isFavorite;
+  final ValueChanged<ProductModel> onFavoriteToggle;
+  final void Function(ProductModel product, int quantity) onAddToCart;
+
+  const _ProductCard({
+    required this.product,
+    required this.isFavorite,
+    required this.onFavoriteToggle,
+    required this.onAddToCart,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const goldColor = Color(0xFFD4AF37);
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProductDetailsScreen(
+              product: product,
+              onAddToCart: onAddToCart,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: goldColor.withValues(alpha: 0.2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Align(
+              alignment: Alignment.centerRight,
+              child: GestureDetector(
+                onTap: () => onFavoriteToggle(product),
+                child: Icon(
+                  isFavorite
+                      ? Icons.favorite_rounded
+                      : Icons.favorite_border_rounded,
+                  size: 20,
+                  color: isFavorite ? const Color(0xFFE6B31E) : goldColor,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Center(
+                child: _ProductImage(imageUrl: product.proImage, size: 90),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              product.proName,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF2D1D15),
+              ),
+            ),
+            const SizedBox(height: 4),
+            _ProductPrice(product: product),
+            const SizedBox(height: 8),
+            AddCardButton(onTap: () => _confirmAddToCart(context)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmAddToCart(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFFFFFCF2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          title: const Text(
+            "Add to Cart?",
+            style: TextStyle(
+              color: Color(0xFF2D1D15),
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
+          content: Text(
+            "Do you want to add '${product.proName}' to your shopping cart?",
+            style: const TextStyle(color: Color(0xFF2D1D15), fontSize: 14),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                "Cancel",
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                onAddToCart(product, 1);
+              },
+              child: const Text(
+                "Add",
+                style: TextStyle(
+                  color: Color(0xFFD4AF37),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ProductPrice extends StatelessWidget {
+  final ProductModel product;
+
+  const _ProductPrice({required this.product});
+
+  @override
+  Widget build(BuildContext context) {
+    if (!product.hasSale) {
+      return Text(
+        product.displayPrice,
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF2D1D15),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          product.displayPrice,
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF2D1D15),
+            decoration: TextDecoration.lineThrough,
+            decorationThickness: 1.4,
+          ),
+        ),
+        Text(
+          product.displaySalePrice,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Colors.red,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ProductImage extends StatelessWidget {
+  final String imageUrl;
+  final double size;
+
+  const _ProductImage({required this.imageUrl, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    if (imageUrl.isEmpty) {
+      return const Icon(Icons.spa_outlined, size: 55, color: Color(0xFFD4AF37));
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: Image.network(
+        imageUrl,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return const Icon(
+            Icons.broken_image_outlined,
+            size: 50,
+            color: Color(0xFFD4AF37),
+          );
+        },
       ),
     );
   }

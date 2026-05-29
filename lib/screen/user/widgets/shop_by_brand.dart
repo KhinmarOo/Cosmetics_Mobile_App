@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
+import '../../../models/category_model.dart';
 
 class ShopByBrandSection extends StatelessWidget {
-  const ShopByBrandSection({super.key});
+  final List<CategoryModel> categories;
+  final String? selectedCategoryId;
+  final ValueChanged<CategoryModel> onCategorySelected;
+
+  const ShopByBrandSection({
+    super.key,
+    required this.categories,
+    required this.selectedCategoryId,
+    required this.onCategorySelected,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // ညွှန်ကြားထားသည့် Brand ၆ ခုစာရင်း
-    final List<String> brands = [
-      "CutaPro",
-      "Rom&nd",
-      "Novo",
-      "Fraijour",
-      "Maybelline",
-      "Vaseline"
-    ];
+    final visibleCategories = categories.take(6).toList();
+
+    if (visibleCategories.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -31,58 +37,127 @@ class ShopByBrandSection extends StatelessWidget {
           ),
         ),
         SizedBox(
-          height: 85,
-          child: ListView.builder(
+          height: 88,
+          child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 15),
-            // ၃၆၀ ပတ်ချာလည် အနန္တ ဆွဲလို့ရစေရန် itemCount ကို အများကြီး ပေးထားခြင်းဖြစ်ပါတယ်
-            itemCount: 10000, 
+            itemCount: visibleCategories.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 16),
             itemBuilder: (context, index) {
-              // ပတ်ချာလည် လည်ပတ်နိုင်ရန် % ခံ၍ အကြွင်းရှာခြင်း
-              final brandName = brands[index % brands.length];
+              final category = visibleCategories[index];
+              final isSelected = category.catId == selectedCategoryId;
 
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: Column(
-                  children: [
-                    // ရွှေရောင် Gradient ပါသော အဝိုင်းပုံစံ Brand Button
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: [
-                            Color(0xFFE6B31E), // ရွှေဝါရောင် ဖျော့
-                            Color(0xFFF7F1E3),
-                            Color(0xFFE6B31E),
-                          ],
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          brandName.substring(0, index % brands.length == 0 ? 4 : 3), // အတိုကောက်စာသားပြရန်
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF2D1D15),
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      brandName,
-                      style: const TextStyle(fontSize: 11, color: Colors.black87),
-                    ),
-                  ],
-                ),
+              return _BrandItem(
+                category: category,
+                isSelected: isSelected,
+                onTap: () => onCategorySelected(category),
               );
             },
           ),
         ),
       ],
     );
+  }
+}
+
+class _BrandItem extends StatelessWidget {
+  final CategoryModel category;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _BrandItem({
+    required this.category,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const goldColor = Color(0xFFD4AF37);
+    final brandImage = _brandImage(category.catName);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox(
+        width: 68,
+        child: Column(
+          children: [
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFFFFFCF2),
+                // gradient: const LinearGradient(
+                //   colors: [
+                //     Color(0xFFE6B31E),
+                //     Color(0xFFF7F1E3),
+                //     Color(0xFFE6B31E),
+                //   ],
+                // ),
+                border: Border.all(
+                  color: isSelected ? const Color(0xFF2D1D15) : goldColor,
+                  width: isSelected ? 2 : 0,
+                ),
+              ),
+              child: Center(
+                child: brandImage == null
+                    ? const Icon(
+                        Icons.spa_outlined,
+                        color: Color(0xFF2D1D15),
+                        size: 28,
+                      )
+                    : ClipOval(
+                        child: Image.asset(
+                          brandImage,
+                          width: 38,
+                          height: 38,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Icon(
+                              Icons.spa_outlined,
+                              color: Color(0xFF2D1D15),
+                              size: 28,
+                            );
+                          },
+                        ),
+                      ),
+              ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              category.catName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: const Color(0xFF2D1D15),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String? _brandImage(String brandName) {
+    final name = brandName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    const brandAssets = {
+      'cutapro': 'assets/images/cutapro.png',
+      'fraijour': 'assets/images/fraijour.png',
+      'maybelline': 'assets/images/maybelline.png',
+      'novo': 'assets/images/novo.png',
+      'romand': 'assets/images/romand.png',
+      'vaseline': 'assets/images/vaseline.png',
+    };
+
+    for (final entry in brandAssets.entries) {
+      if (name.contains(entry.key)) {
+        return entry.value;
+      }
+    }
+
+    return null;
   }
 }

@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 
+import '../../services/order_service.dart';
+
 class CheckoutScreen extends StatefulWidget {
   final List<Map<String, dynamic>> cartItems;
+  final VoidCallback onOrderCompleted;
 
   const CheckoutScreen({
     super.key,
     required this.cartItems,
+    required this.onOrderCompleted,
   });
 
   @override
@@ -13,46 +17,100 @@ class CheckoutScreen extends StatefulWidget {
 }
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
-  // Form အချက်အလက်များကို ထိန်းချုပ်ရန် Controller များ
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
+  final OrderService _orderService = OrderService();
+  bool _isSubmitting = false;
 
-  // Cart ထဲက ပစ္စည်းအရေအတွက် စုစုပေါင်းကို တွက်ချက်ပေးမည့် Function
   int _getCartCount() {
-    int totalCount = 0;
-    for (var item in widget.cartItems) {
-      totalCount += (item["quantity"] as int? ?? 0);
+    var totalCount = 0;
+    for (final item in widget.cartItems) {
+      totalCount += item["quantity"] as int? ?? 0;
     }
     return totalCount;
   }
 
+  Future<void> _sendOrder() async {
+    final name = _nameController.text.trim();
+    final phone = _phoneController.text.trim();
+    final address = _addressController.text.trim();
+
+    if (widget.cartItems.isEmpty) {
+      _showMessage("Your cart is empty");
+      return;
+    }
+
+    if (name.isEmpty || phone.isEmpty || address.isEmpty) {
+      _showMessage("Please fill all details!");
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      await _orderService.createOrder(
+        name: name,
+        phone: phone,
+        address: address,
+        cartItems: widget.cartItems,
+      );
+
+      widget.onOrderCompleted();
+
+      if (!mounted) return;
+      _showMessage("Order Sent Successfully!");
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      _showMessage("Order failed: $e");
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   Widget build(BuildContext context) {
-    const Color goldColor = Color(0xFFD4AF37);
-    const Color textColor = Color(0xFF2D1D15);
-    const Color inputBgColor = Color(0xFFFFFFFF); // ပုံပါအတိုင်း ဖျော့တော့သော ပန်းရောင်သန်းသည့် Input Background
-    int cartCount = _getCartCount();
+    const goldColor = Color(0xFFD4AF37);
+    const textColor = Color(0xFF2D1D15);
+    const buttonTextColor = Color(0xFF4A4A4A);
+    const inputBgColor = Color(0xFFFFFFFF);
+    final cartCount = _getCartCount();
 
     return Scaffold(
       backgroundColor: const Color(0xFFFFFCF2),
-
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ၁။ Header Section (Back Arrow, Title & Cart Badge)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 15,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.arrow_back_rounded, color: goldColor, size: 28),
-                      onPressed: () {
-                        Navigator.pop(context); // ခလုတ်နှိပ်လျှင် ရှေ့စာမျက်နှာသို့ ပြန်သွားရန်
-                      },
+                      icon: const Icon(
+                        Icons.arrow_back_rounded,
+                        color: goldColor,
+                        size: 28,
+                      ),
+                      onPressed: _isSubmitting
+                          ? null
+                          : () {
+                              Navigator.pop(context);
+                            },
                     ),
                     const Text(
                       "Checkout",
@@ -62,13 +120,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    // Shopping Cart Badge
                     Stack(
                       alignment: Alignment.topRight,
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.shopping_cart_outlined, color: goldColor, size: 26),
-                          onPressed: () {},
+                          icon: const Icon(
+                            Icons.shopping_cart_outlined,
+                            color: goldColor,
+                            size: 26,
+                          ),
+                          onPressed: _isSubmitting
+                              ? null
+                              : () {
+                                  Navigator.pop(context);
+                                },
                         ),
                         if (cartCount > 0)
                           Positioned(
@@ -85,7 +150,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 minHeight: 16,
                               ),
                               child: Text(
-                                '$cartCount',
+                                cartCount > 99 ? "99+" : "$cartCount",
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 9,
@@ -101,127 +166,58 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ),
               ),
               const SizedBox(height: 70),
-
-              // ၂။ Input Form Fields Section
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 30),
                 child: Column(
                   children: [
-                    // --- Name Input ---
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        const SizedBox(
-                          width: 80,
-                          child: Text(
-                            "Name :",
-                            style: TextStyle(color: textColor, fontSize: 15, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        Expanded(
-                          child: Container(
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: inputBgColor,
-                              borderRadius: BorderRadius.circular(12),
-                              // border: Border.all(color: goldColor.withOpacity(0.2)),
-                              boxShadow: [
-                                BoxShadow(
-                                  blurRadius: 4,
-                                  spreadRadius: 2,
-                                  offset: Offset(0, 2),
-                                  color: Colors.grey.withOpacity(0.2),
-                                )
-                              ]
-                            ),
-                            child: TextField(
-                              controller: _nameController,
-                              style: const TextStyle(fontSize: 14),
-                              decoration: const InputDecoration(
-                                border: InputBorder.none,
-                                contentPadding: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                    _CheckoutInputRow(
+                      label: "Name :",
+                      controller: _nameController,
+                      inputBgColor: inputBgColor,
                     ),
                     const SizedBox(height: 20),
-
-                    // --- Phone Input ---
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        const SizedBox(
-                          width: 80,
-                          child: Text(
-                            "Phone :",
-                            style: TextStyle(color: textColor, fontSize: 15, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        Expanded(
-                          child: Container(
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: inputBgColor,
-                              borderRadius: BorderRadius.circular(12),
-                              // border: Border.all(color: goldColor.withOpacity(0.2)),
-                              boxShadow: [
-                                BoxShadow(
-                                  blurRadius: 4,
-                                  spreadRadius: 2,
-                                  offset: Offset(0, 2),
-                                  color: Colors.grey.withOpacity(0.2),
-                                )
-                              ]
-                            ),
-                            child: TextField(
-                              controller: _phoneController,
-                              keyboardType: TextInputType.phone,
-                              style: const TextStyle(fontSize: 14),
-                              decoration: const InputDecoration(
-                                border: InputBorder.none,
-                                contentPadding: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                    _CheckoutInputRow(
+                      label: "Phone :",
+                      controller: _phoneController,
+                      inputBgColor: inputBgColor,
+                      keyboardType: TextInputType.phone,
                     ),
                     const SizedBox(height: 20),
-
-                    // --- Address Input ---
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Padding(
-                          padding: EdgeInsets.only(top: 8.0),
+                          padding: EdgeInsets.only(top: 8),
                           child: SizedBox(
                             width: 80,
                             child: Text(
                               "Address :",
-                              style: TextStyle(color: textColor, fontSize: 15, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                color: textColor,
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),
                         Expanded(
                           child: Container(
-                            height: 100, // လိပ်စာအတွက် Box ကို ပိုကြီးအောင် သတ်မှတ်ခြင်း
+                            height: 100,
                             decoration: BoxDecoration(
                               color: inputBgColor,
                               borderRadius: BorderRadius.circular(12),
-                              // border: Border.all(color: goldColor.withOpacity(0.2)),
                               boxShadow: [
                                 BoxShadow(
                                   blurRadius: 4,
                                   spreadRadius: 2,
-                                  offset: Offset(0, 2),
-                                  color: Colors.grey.withOpacity(0.2),
-                                )
-                              ]
+                                  offset: const Offset(0, 2),
+                                  color: Colors.grey.withValues(alpha: 0.2),
+                                ),
+                              ],
                             ),
                             child: TextField(
                               controller: _addressController,
+                              enabled: !_isSubmitting,
                               maxLines: 4,
                               style: const TextStyle(fontSize: 14),
                               decoration: const InputDecoration(
@@ -237,53 +233,49 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ),
               ),
               const SizedBox(height: 60),
-
-              // ၃။ Send Order Button (Gradient Style)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 30),
                 child: GestureDetector(
-                  onTap: () {
-                    // အော်ဒါတင်ခြင်း အောင်မြင်ကြောင်း လုပ်ဆောင်ချက် ရေးရန်နေရာ
-                    if (_nameController.text.isEmpty || _phoneController.text.isEmpty || _addressController.text.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Please fill all details!")),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Order Sent Successfully!")),
-                      );
-                    }
-                  },
+                  onTap: _isSubmitting ? null : _sendOrder,
                   child: Container(
                     height: 45,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(25),
                       gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                         colors: [
-                          Color(0xFFE6B31E), 
+                          Color(0xFFD4AF37),
                           Color(0xFFF7F1E3),
-                          Color(0xFFE6B31E), 
+                          Color(0xFFD4AF37),
                         ],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 4,
                           offset: const Offset(0, 3),
                         ),
                       ],
                     ),
-                    child: const Center(
-                      child: Text(
-                        "Send Order",
-                        style: TextStyle(
-                          color: textColor,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                    child: Center(
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: buttonTextColor,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text(
+                              "Send Order",
+                              style: TextStyle(
+                                color: buttonTextColor,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     ),
                   ),
                 ),
@@ -302,5 +294,70 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     _phoneController.dispose();
     _addressController.dispose();
     super.dispose();
+  }
+}
+
+class _CheckoutInputRow extends StatelessWidget {
+  final String label;
+  final TextEditingController controller;
+  final Color inputBgColor;
+  final TextInputType keyboardType;
+
+  const _CheckoutInputRow({
+    required this.label,
+    required this.controller,
+    required this.inputBgColor,
+    this.keyboardType = TextInputType.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const textColor = Color(0xFF2D1D15);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: 80,
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: textColor,
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Container(
+            height: 40,
+            decoration: BoxDecoration(
+              color: inputBgColor,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  blurRadius: 4,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 2),
+                  color: Colors.grey.withValues(alpha: 0.2),
+                ),
+              ],
+            ),
+            child: TextField(
+              controller: controller,
+              keyboardType: keyboardType,
+              style: const TextStyle(fontSize: 14),
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 15,
+                  vertical: 10,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
