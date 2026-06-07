@@ -1,4 +1,4 @@
-# Beauty with me - Cosmetics Mobile Application
+<img width="1362" height="683" alt="image" src="https://github.com/user-attachments/assets/5480cb6c-2c97-4419-ac11-5633290a21b5" /># Beauty with me - Cosmetics Mobile Application
 
 **Beauty with me** is a professional cosmetics E-commerce mobile application built with Flutter. It provides a seamless shopping experience with a comprehensive Admin panel for store management and a user-friendly interface for customers.
 
@@ -28,14 +28,18 @@
 * **Authentication:** Supabase Auth
 
 ## 📸 App Screenshots
+<br>
+| Home Page | All Product Page | Shopping Cart |
+<br>
 
-##| Home Page | All Product Page | Shopping Cart |
+<img width="300" height="600" alt="photo_2026-06-07_21-32-19" src="https://github.com/user-attachments/assets/6ca1728f-1048-416a-910d-31c8c7c45920" hspace="20" /><img width="300" height="600" alt="photo_2026-06-07_21-36-58" src="https://github.com/user-attachments/assets/8b2f0dfc-2488-4684-b5eb-6069ec7f7ff0" hspace="20" /><img width="300" height="600" alt="photo_2026-06-07_21-36-30" src="https://github.com/user-attachments/assets/25923b3a-8874-4095-a923-5d25c11ce313" hspace="20" />
+<br>
+<br>
 
-<img width="300" height="600" alt="photo_2026-06-07_21-32-19" src="https://github.com/user-attachments/assets/6ca1728f-1048-416a-910d-31c8c7c45920" /><img width="300" height="600" alt="photo_2026-06-07_21-36-58" src="https://github.com/user-attachments/assets/8b2f0dfc-2488-4684-b5eb-6069ec7f7ff0" /><img width="300" height="600" alt="photo_2026-06-07_21-36-30" src="https://github.com/user-attachments/assets/25923b3a-8874-4095-a923-5d25c11ce313" />
+| Wishlist Page | Product Details | Checkout Page |
+<br>
 
-## | Wishlist Page | Product Details | Checkout Page |
-
-<img width="300" height="600" alt="wishlist" src="https://github.com/user-attachments/assets/e8f73d28-e21d-4015-80d7-23875c43ed00" />    <img width="300" height="600" alt="checkout" src="https://github.com/user-attachments/assets/77f07e04-ff9a-4edf-8c3f-0a5026e79d50" />    <img width="300" height="600" alt="product_details" src="https://github.com/user-attachments/assets/61f80611-b903-4b32-bac2-98849fb54fdb" />
+<img width="300" height="600" alt="wishlist" src="https://github.com/user-attachments/assets/e8f73d28-e21d-4015-80d7-23875c43ed00" hspace="20" />    <img width="300" height="600" alt="checkout" src="https://github.com/user-attachments/assets/77f07e04-ff9a-4edf-8c3f-0a5026e79d50" hspace="20" />    <img width="300" height="600" alt="product_details" src="https://github.com/user-attachments/assets/61f80611-b903-4b32-bac2-98849fb54fdb" hspace="20" />
 
 
 
