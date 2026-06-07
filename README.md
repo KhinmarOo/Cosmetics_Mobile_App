@@ -28,8 +28,12 @@
 * **Authentication:** Supabase Auth
 
 ## 📸 App Screenshots
-| Home Page <img width="583" height="1280" alt="photo_2026-06-07_21-32-19" src="https://github.com/user-attachments/assets/6ca1728f-1048-416a-910d-31c8c7c45920" />
- | Product Details | Shopping Cart |
+| Home Page | Product Details | Shopping Cart |
+<img width="300" height="900" alt="photo_2026-06-07_21-32-19" src="https://github.com/user-attachments/assets/6ca1728f-1048-416a-910d-31c8c7c45920" /><img width="300" height="900" alt="photo_2026-06-07_21-36-58" src="https://github.com/user-attachments/assets/8b2f0dfc-2488-4684-b5eb-6069ec7f7ff0" />
+<img width="300" height="900" alt="photo_2026-06-07_21-36-30" src="https://github.com/user-attachments/assets/25923b3a-8874-4095-a923-5d25c11ce313" />
+
+
+
 
 
 ## 📱 Download Application
