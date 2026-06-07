@@ -27,6 +27,11 @@
 * **Backend/Database:** Supabase
 * **Authentication:** Supabase Auth
 
+## 📸 App Screenshots
+| Home Page <img width="583" height="1280" alt="photo_2026-06-07_21-32-19" src="https://github.com/user-attachments/assets/6ca1728f-1048-416a-910d-31c8c7c45920" />
+ | Product Details | Shopping Cart |
+
+
 ## 📱 Download Application
 You can download the latest version of the application (APK) directly to test it on your Android device.
 
