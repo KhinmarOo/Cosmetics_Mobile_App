@@ -11,7 +11,7 @@ class AddUserScreen extends StatefulWidget {
 
 class _AddUserScreenState extends State<AddUserScreen> {
   static const Color _backgroundColor = Color(0xFFFFFCF2);
-  static const Color _cardColor = Color(0xFFFFE4E4);
+  static const Color _cardColor = Color(0xFFFFFFFF);
   static const Color _goldColor = Color(0xFFE6B31E);
   static const Color _textColor = Color(0xFF2D1D15);
   static const Color _inputBorderColor = Color(0xFFC7A17A);
@@ -100,7 +100,7 @@ class _AddUserScreenState extends State<AddUserScreen> {
           width: double.infinity,
           padding: const EdgeInsets.fromLTRB(20, 22, 20, 24),
           decoration: BoxDecoration(
-            color: _cardColor.withValues(alpha: 0.9),
+            color: _cardColor,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(

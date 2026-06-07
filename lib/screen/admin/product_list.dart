@@ -12,6 +12,12 @@ class ProductListScreen extends StatefulWidget {
 }
 
 class _ProductListScreenState extends State<ProductListScreen> {
+  static const Color _backgroundColor = Color(0xFFFFFCF2);
+  static const Color _panelColor = Color(0xFFFFFFFF);
+  static const Color _goldColor = Color(0xFFD4AF37);
+  static const Color _lightGoldColor = Color(0xFFF7F1E3);
+  static const Color _textColor = Color(0xFF4B3128);
+
   final ProductService _service = ProductService();
   late Future<List<ProductModel>> _productsFuture;
   bool _isBusy = false;
@@ -33,145 +39,122 @@ class _ProductListScreenState extends State<ProductListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFCF2),
+      backgroundColor: _backgroundColor,
       drawer: const AdminDrawer(activeTitle: "Products"),
       appBar: AppBar(
-        title: const Text("Product Lists"),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        foregroundColor: _textColor,
+        title: const Text("Product Lists"),
       ),
-      body: FutureBuilder<List<ProductModel>>(
-        future: _productsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}"));
-          }
-
-          final products = snapshot.data ?? [];
-          return RefreshIndicator(
-            color: const Color(0xFFD4AF37),
-            onRefresh: _refreshProducts,
-            child: ListView.builder(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
-              itemCount: products.isEmpty ? 1 : products.length,
-              itemBuilder: (context, index) {
-                if (products.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.only(top: 220),
-                    child: Center(child: Text("No products found")),
-                  );
-                }
-
-                final item = products[index];
-                return Card(
-                  color: Colors.white,
-                  surfaceTintColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  margin: const EdgeInsets.only(bottom: 15),
-                  child: ExpansionTile(
-                    leading: Image.network(
-                      item.proImage,
-                      width: 50,
-                      height: 50,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          const Icon(Icons.broken_image_outlined),
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 14, 24, 20),
+        child: Column(
+          children: [
+            Align(
+              alignment: Alignment.centerRight,
+              child: GestureDetector(
+                onTap: _openAddProduct,
+                child: Container(
+                  height: 34,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    gradient: const LinearGradient(
+                      colors: [_goldColor, _lightGoldColor, _goldColor],
                     ),
-                    title: Text(item.proName),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _detailRow(
-                              "Price",
-                              "${_formatPrice(item.proPrice)} MMK",
-                            ),
-                            _detailRow("Quantity", "${item.proQty}"),
-                            _detailRow("Date", _formatDate(item.createdAt)),
-                            _detailRow("Description", item.proDescription),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.edit,
-                                    color: Colors.blue,
-                                  ),
-                                  onPressed: _isBusy
-                                      ? null
-                                      : () => _showEditDialog(item),
-                                ),
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.delete,
-                                    color: Colors.red,
-                                  ),
-                                  onPressed: _isBusy
-                                      ? null
-                                      : () => _confirmDelete(item),
-                                ),
-                              ],
-                            ),
-                          ],
+                      Text(
+                        "New Product",
+                        style: TextStyle(
+                          color: Color(0xFF2D1D15),
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
+                      SizedBox(width: 8),
+                      Icon(Icons.add, size: 18, color: Color(0xFF2D1D15)),
                     ],
                   ),
-                );
-              },
+                ),
+              ),
             ),
-          );
-        },
-      ),
-      floatingActionButton: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: const LinearGradient(
-            colors: [Color(0xFFD4AF37), Color(0xFFF7F1E3), Color(0xFFD4AF37)],
-          ),
-        ),
-        child: FloatingActionButton.extended(
-          elevation: 0,
-          backgroundColor: Colors.transparent,
-          foregroundColor: const Color(0xFF2D1D15),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const AddProductScreen()),
-            ).then((saved) {
-              if (saved == true) {
-                _refreshProducts();
-              }
-            });
-          },
-          label: const Text(
-            "New Product",
-            style: TextStyle(color: Color(0xFF2D1D15)),
-          ),
-          icon: const Icon(Icons.add),
+            const SizedBox(height: 48),
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: _panelColor.withValues(alpha: 0.78),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: FutureBuilder<List<ProductModel>>(
+                  future: _productsFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(
+                        child: CircularProgressIndicator(color: _goldColor),
+                      );
+                    }
+
+                    if (snapshot.hasError) {
+                      return Center(child: Text("Error: ${snapshot.error}"));
+                    }
+
+                    final products = snapshot.data ?? [];
+                    if (products.isEmpty) {
+                      return RefreshIndicator(
+                        color: _goldColor,
+                        onRefresh: _refreshProducts,
+                        child: ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          children: const [
+                            SizedBox(height: 220),
+                            Center(child: Text("No products found")),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return RefreshIndicator(
+                      color: _goldColor,
+                      onRefresh: _refreshProducts,
+                      child: ListView.separated(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        itemCount: products.length,
+                        separatorBuilder: (context, index) =>
+                            Divider(height: 1, color: Colors.brown.shade100),
+                        itemBuilder: (context, index) {
+                          final product = products[index];
+                          return _ProductTile(
+                            product: product,
+                            isBusy: _isBusy,
+                            onEdit: () => _showEditDialog(product),
+                            onDelete: () => _confirmDelete(product),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _detailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Text("$label: ", style: const TextStyle(fontWeight: FontWeight.bold)),
-          Expanded(child: Text(value)),
-        ],
-      ),
+  Future<void> _openAddProduct() async {
+    final saved = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (context) => const AddProductScreen()),
     );
+
+    if (saved == true) {
+      _refreshProducts();
+    }
   }
 
   String _formatPrice(double price) {
@@ -180,20 +163,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
     }
 
     return price.toStringAsFixed(2);
-  }
-
-  String _formatDate(DateTime? date) {
-    if (date == null) return "-";
-
-    final local = date.toLocal();
-    final month = local.month.toString().padLeft(2, '0');
-    final day = local.day.toString().padLeft(2, '0');
-    final year = (local.year % 100).toString().padLeft(2, '0');
-    final hour = local.hour == 0 || local.hour == 12 ? 12 : local.hour % 12;
-    final minute = local.minute.toString().padLeft(2, '0');
-    final period = local.hour >= 12 ? 'PM' : 'AM';
-
-    return "$month/$day/$year at $hour:$minute $period";
   }
 
   Future<void> _showEditDialog(ProductModel product) async {
@@ -280,6 +249,176 @@ class _ProductListScreenState extends State<ProductListScreen> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
+  }
+}
+
+class _ProductTile extends StatefulWidget {
+  final ProductModel product;
+  final bool isBusy;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  const _ProductTile({
+    required this.product,
+    required this.isBusy,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  State<_ProductTile> createState() => _ProductTileState();
+}
+
+class _ProductTileState extends State<_ProductTile> {
+  bool _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        InkWell(
+          onTap: () => setState(() => _isExpanded = !_isExpanded),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    widget.product.proImage,
+                    width: 36,
+                    height: 36,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      width: 36,
+                      height: 36,
+                      color: const Color(0xFFF7F1E3),
+                      child: const Icon(
+                        Icons.image_not_supported_outlined,
+                        color: Color(0xFFD4AF37),
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    widget.product.proName,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFF4B3128),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFDECEE).withValues(alpha: 0.7),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    _isExpanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                    color: const Color(0xFF4B3128),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (_isExpanded)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(60, 0, 16, 14),
+            child: Column(
+              children: [
+                _detailRow(
+                  "Price",
+                  "${_formatPrice(widget.product.proPrice)} MMK",
+                ),
+                _detailRow("Quantity", "${widget.product.proQty}"),
+                _detailRow("Date", _formatDate(widget.product.createdAt)),
+                _detailRow("Description", widget.product.proDescription),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      tooltip: "Edit",
+                      onPressed: widget.isBusy ? null : widget.onEdit,
+                      icon: const Icon(
+                        Icons.edit_outlined,
+                        color: Color(0xFF8A6A1F),
+                        size: 20,
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: "Delete",
+                      onPressed: widget.isBusy ? null : widget.onDelete,
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: Colors.redAccent,
+                        size: 20,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _detailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 9),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 84,
+            child: Text(
+              label,
+              style: TextStyle(color: Colors.brown.shade400, fontSize: 12),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value.isEmpty ? "-" : value,
+              style: const TextStyle(color: Color(0xFF4B3128), fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatPrice(double price) {
+    if (price == price.roundToDouble()) {
+      return price.round().toString();
+    }
+
+    return price.toStringAsFixed(2);
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return "-";
+
+    final local = date.toLocal();
+    final month = local.month.toString().padLeft(2, '0');
+    final day = local.day.toString().padLeft(2, '0');
+    final year = (local.year % 100).toString().padLeft(2, '0');
+    final hour = local.hour == 0 || local.hour == 12 ? 12 : local.hour % 12;
+    final minute = local.minute.toString().padLeft(2, '0');
+    final period = local.hour >= 12 ? 'PM' : 'AM';
+
+    return "$month/$day/$year at $hour:$minute $period";
   }
 }
 

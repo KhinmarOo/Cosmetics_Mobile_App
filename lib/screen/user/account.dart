@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../components/logout_confirm_dialog.dart';
 import '../../models/user_model.dart';
 import '../../services/user_service.dart';
+import 'order_history.dart';
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -174,9 +176,9 @@ class _AccountPageState extends State<AccountPage> {
                     ),
                     _buildDivider(),
                     _buildAccountOption(
-                      icon: Icons.notifications_none_rounded,
-                      title: "Notifications",
-                      onTap: () {},
+                      icon: Icons.receipt_long_outlined,
+                      title: "Order History",
+                      onTap: _showOrderHistory,
                     ),
                     _buildDivider(),
                     _buildAccountOption(
@@ -203,22 +205,7 @@ class _AccountPageState extends State<AccountPage> {
   Future<void> _confirmLogout() async {
     final shouldLogout = await showDialog<bool>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text("Logout"),
-          content: const Text("Are you sure you want to logout?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text("Cancel"),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text("Logout", style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        );
-      },
+      builder: (context) => const LogoutConfirmDialog(),
     );
 
     if (shouldLogout != true) return;
@@ -226,6 +213,13 @@ class _AccountPageState extends State<AccountPage> {
     await _userService.signOut();
     if (!mounted) return;
     Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+  }
+
+  void _showOrderHistory() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const OrderHistoryScreen()),
+    );
   }
 
   Future<void> _showEditProfile(UserModel user) async {

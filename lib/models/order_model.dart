@@ -1,5 +1,6 @@
 class OrderModel {
   final String id;
+  final String userId;
   final String name;
   final String phone;
   final String address;
@@ -9,6 +10,7 @@ class OrderModel {
 
   const OrderModel({
     required this.id,
+    this.userId = '',
     required this.name,
     required this.phone,
     required this.address,
@@ -23,6 +25,7 @@ class OrderModel {
   }) {
     return OrderModel(
       id: map['order_id']?.toString() ?? '',
+      userId: map['user_id']?.toString() ?? '',
       name: map['order_name']?.toString() ?? '',
       phone: map['order_phone']?.toString() ?? '',
       address: map['order_address']?.toString() ?? '',
@@ -42,6 +45,10 @@ class OrderModel {
 
     if (id.isNotEmpty) {
       data['order_id'] = id;
+    }
+
+    if (userId.isNotEmpty) {
+      data['user_id'] = userId;
     }
 
     return data;

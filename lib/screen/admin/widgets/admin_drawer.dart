@@ -1,10 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class AdminDrawer extends StatelessWidget {
+import '../../../components/logout_confirm_dialog.dart';
+import '../../../models/user_model.dart';
+import '../../../services/user_service.dart';
+
+class AdminDrawer extends StatefulWidget {
   final String activeTitle;
 
   const AdminDrawer({super.key, required this.activeTitle});
+
+  @override
+  State<AdminDrawer> createState() => _AdminDrawerState();
+}
+
+class _AdminDrawerState extends State<AdminDrawer> {
+  final UserService _userService = UserService();
+  late final Future<UserModel> _userFuture;
 
   static const Color _goldColor = Color(0xFFD4AF37);
   static const Color _lightGoldColor = Color(0xFFF7F1E3);
@@ -18,6 +30,12 @@ class AdminDrawer extends StatelessWidget {
     "Order": "/admin/orders",
     "Customer Lists": "/admin/users",
   };
+
+  @override
+  void initState() {
+    super.initState();
+    _userFuture = _userService.getUserProfile();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,13 +54,61 @@ class AdminDrawer extends StatelessWidget {
                 colors: [_goldColor, _lightGoldColor, _goldColor],
               ),
             ),
-            child: Center(
-              child: Image.asset(
-                'assets/images/cosmetic_logo.png',
-                width: 86,
-                height: 86,
-                fit: BoxFit.contain,
-              ),
+            child: FutureBuilder<UserModel>(
+              future: _userFuture,
+              builder: (context, snapshot) {
+                final authUser = Supabase.instance.client.auth.currentUser;
+                final user = snapshot.data;
+                final userName = user?.name.trim().isNotEmpty == true
+                    ? user!.name.trim()
+                    : authUser?.email ?? "Admin";
+                final userEmail = user?.email.trim().isNotEmpty == true
+                    ? user!.email.trim()
+                    : authUser?.email ?? "";
+
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Center(
+                      child: Image.asset(
+                        'assets/images/cosmetic_logo.png',
+                        width: 82,
+                        height: 82,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        userName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.left,
+                        style: const TextStyle(
+                          color: _darkTextColor,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        userEmail,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.left,
+                        style: TextStyle(
+                          color: _darkTextColor.withValues(alpha: 0.74),
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
           _drawerItem(context, Icons.home_filled, "Dashboard"),
@@ -66,7 +132,7 @@ class AdminDrawer extends StatelessWidget {
   }
 
   Widget _drawerItem(BuildContext context, IconData icon, String title) {
-    final isActive = activeTitle == title;
+    final isActive = widget.activeTitle == title;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
@@ -109,36 +175,18 @@ class AdminDrawer extends StatelessWidget {
   }
 
   Future<void> _logout(BuildContext context) async {
-    Navigator.pop(context);
-
     final shouldLogout = await showDialog<bool>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text("Logout"),
-          content: const Text("Are you sure you want to logout?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _goldColor,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text("Logout"),
-            ),
-          ],
-        );
-      },
+      builder: (context) => const LogoutConfirmDialog(),
     );
 
     if (shouldLogout != true || !context.mounted) return;
 
     await Supabase.instance.client.auth.signOut();
     if (!context.mounted) return;
-    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+    Navigator.of(
+      context,
+      rootNavigator: true,
+    ).pushNamedAndRemoveUntil('/login', (route) => false);
   }
 }

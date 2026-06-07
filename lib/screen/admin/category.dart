@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../services/category_service.dart';
+
 import '../../../models/category_model.dart';
-import 'widgets/admin_drawer.dart';
+import '../../../services/category_service.dart';
 import 'widgets/add_category_dialog.dart';
+import 'widgets/admin_drawer.dart';
 
 class CategoryScreen extends StatefulWidget {
   const CategoryScreen({super.key});
@@ -30,21 +31,22 @@ class _CategoryScreenState extends State<CategoryScreen> {
     setState(() => _isLoading = true);
     try {
       final data = await _service.getCategories();
+      if (!mounted) return;
       setState(() => _categories = data);
     } catch (e) {
-      debugPrint("Error loading: $e");
+      if (!mounted) return;
+      _showMessage("Failed to load categories: $e");
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // Delete လုပ်တဲ့အခါ အတည်ပြုချက်တောင်းဖို့
-  void _confirmDelete(String id, String name) {
-    showDialog(
+  void _confirmDelete(CategoryModel category) {
+    showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text("Confirm Delete"),
-        content: Text("Are you sure you want to delete '$name'?"),
+        content: Text("Are you sure you want to delete '${category.catName}'?"),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -53,14 +55,57 @@ class _CategoryScreenState extends State<CategoryScreen> {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-              await _service.deleteCategory(id);
-              _loadCategories();
+              await _deleteCategory(category);
             },
             child: const Text("Delete", style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _deleteCategory(CategoryModel category) async {
+    try {
+      final hasProducts = await _service.categoryHasProducts(category.catId);
+      if (!mounted) return;
+
+      if (hasProducts) {
+        _showMessage(
+          "This category has products. Move or delete those products first.",
+        );
+        return;
+      }
+
+      await _service.deleteCategory(category.catId);
+      if (!mounted) return;
+      _showMessage("Category deleted successfully");
+      _loadCategories();
+    } catch (e) {
+      if (!mounted) return;
+      _showMessage("Failed to delete category: $e");
+    }
+  }
+
+  Future<void> _showAddDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (_) => const AddCategoryDialog(),
+    );
+    if (result == true) _loadCategories();
+  }
+
+  Future<void> _showEditDialog(CategoryModel category) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (_) => AddCategoryDialog(category: category),
+    );
+    if (result == true) _loadCategories();
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -91,7 +136,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                   return Container(
                     margin: const EdgeInsets.only(bottom: 15),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
+                      horizontal: 16,
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
@@ -107,24 +152,27 @@ class _CategoryScreenState extends State<CategoryScreen> {
                     ),
                     child: Row(
                       children: [
+                        _CategoryThumbnail(category: category),
+                        const SizedBox(width: 14),
                         Expanded(
                           child: Text(
                             category.catName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
+                              color: _textColor,
                               fontSize: 18,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
-                        // အစက် ၃ စက် Menu
                         PopupMenuButton<String>(
                           icon: const Icon(Icons.more_vert, color: Colors.grey),
                           onSelected: (value) {
                             if (value == 'edit') {
-                              // Edit Dialog ခေါ်မယ် (Edit အတွက် Dialog logic ကို အောက်မှာ ပြထားပါတယ်)
                               _showEditDialog(category);
                             } else if (value == 'delete') {
-                              _confirmDelete(category.catId, category.catName);
+                              _confirmDelete(category);
                             }
                           },
                           itemBuilder: (context) => [
@@ -165,51 +213,47 @@ class _CategoryScreenState extends State<CategoryScreen> {
             ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: _goldColor,
-        onPressed: () async {
-          final result = await showDialog(
-            context: context,
-            builder: (_) => const AddCategoryDialog(),
-          );
-          if (result == true) _loadCategories();
-        },
+        onPressed: _showAddDialog,
         child: const Icon(Icons.add, color: Colors.white, size: 30),
       ),
     );
   }
+}
 
-  // Edit အတွက် Dialog
-  void _showEditDialog(CategoryModel category) {
-    TextEditingController editController = TextEditingController(
-      text: category.catName,
-    );
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Edit Category"),
-        content: TextField(
-          controller: editController,
-          decoration: const InputDecoration(hintText: "Category Name"),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (editController.text.isNotEmpty) {
-                await _service.updateCategory(
-                  category.catId,
-                  editController.text,
-                );
-                if (!context.mounted) return;
-                Navigator.pop(context);
-                _loadCategories();
-              }
-            },
-            child: const Text("Update"),
-          ),
-        ],
+class _CategoryThumbnail extends StatelessWidget {
+  final CategoryModel category;
+
+  const _CategoryThumbnail({required this.category});
+
+  @override
+  Widget build(BuildContext context) {
+    const goldColor = Color(0xFFD4AF37);
+    final imageUrl = category.catImage.trim();
+
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFCF2),
+        shape: BoxShape.circle,
+        border: Border.all(color: goldColor.withValues(alpha: 0.42)),
+      ),
+      child: ClipOval(
+        child: imageUrl.isEmpty
+            ? const Icon(Icons.spa_outlined, color: goldColor, size: 24)
+            : Image.network(
+                imageUrl,
+                width: 48,
+                height: 48,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(
+                    Icons.spa_outlined,
+                    color: goldColor,
+                    size: 24,
+                  );
+                },
+              ),
       ),
     );
   }

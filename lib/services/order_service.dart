@@ -8,16 +8,39 @@ class OrderService {
   final _supabase = Supabase.instance.client;
 
   Future<List<OrderModel>> getOrders() async {
-    final ordersResponse = await _supabase
+    final orderRows = await _fetchOrderRows();
+    return _buildOrders(orderRows);
+  }
+
+  Future<List<OrderModel>> getCurrentUserOrders() async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null || userId.isEmpty) {
+      throw const AuthException("Please login again to view order history");
+    }
+
+    final orderRows = await _fetchOrderRows(userId: userId);
+    return _buildOrders(orderRows);
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchOrderRows({String? userId}) async {
+    var query = _supabase
         .from('orders')
         .select(
-          'order_id, created_at, order_name, order_phone, order_address, total_amount',
-        )
-        .order('created_at', ascending: false);
+          'order_id, user_id, created_at, order_name, order_phone, order_address, total_amount',
+        );
 
-    final orderRows = (ordersResponse as List<dynamic>)
+    if (userId != null && userId.isNotEmpty) {
+      query = query.eq('user_id', userId);
+    }
+
+    final response = await query.order('created_at', ascending: false);
+    return (response as List<dynamic>)
         .cast<Map<String, dynamic>>();
+  }
 
+  Future<List<OrderModel>> _buildOrders(
+    List<Map<String, dynamic>> orderRows,
+  ) async {
     if (orderRows.isEmpty) {
       return [];
     }
@@ -29,12 +52,15 @@ class OrderService {
 
     final itemRows = await _getOrderItemRows(orderIds);
     final productMap = await _getProductMap(itemRows);
+    final offerPriceMap = await _getOfferPriceMap(itemRows);
     final itemsByOrderId = <String, List<OrderItemModel>>{};
 
     for (final item in itemRows) {
       final orderId = item['order_id']?.toString() ?? '';
       final productId = item['pro_id']?.toString() ?? '';
       final product = productMap[productId];
+      final productPrice = (product?['pro_price'] as num?)?.toDouble() ?? 0;
+      final offerPrice = offerPriceMap[productId];
 
       final orderItem = OrderItemModel(
         id: item['ot_id']?.toString() ?? '',
@@ -42,7 +68,7 @@ class OrderService {
         productId: productId,
         productName: product?['pro_name']?.toString() ?? 'Unknown Product',
         productImage: product?['pro_image']?.toString() ?? '',
-        productPrice: (product?['pro_price'] as num?)?.toInt() ?? 0,
+        productPrice: _effectiveItemPrice(productPrice, offerPrice),
         quantity: (item['ot_qty'] as num?)?.toInt() ?? 1,
       );
 
@@ -65,8 +91,14 @@ class OrderService {
       throw Exception("Cart is empty");
     }
 
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null || userId.isEmpty) {
+      throw const AuthException("Please login again before placing an order");
+    }
+
     final order = OrderModel(
       id: _createUuidV4(),
+      userId: userId,
       name: name.trim(),
       phone: phone.trim(),
       address: address.trim(),
@@ -158,6 +190,38 @@ class OrderService {
 
     final rows = (response as List<dynamic>).cast<Map<String, dynamic>>();
     return {for (final row in rows) row['pro_id']?.toString() ?? '': row};
+  }
+
+  Future<Map<String, double>> _getOfferPriceMap(
+    List<Map<String, dynamic>> orderItems,
+  ) async {
+    final productIds = orderItems
+        .map((item) => item['pro_id']?.toString() ?? '')
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList();
+
+    if (productIds.isEmpty) return {};
+
+    final response = await _supabase
+        .from('offers')
+        .select('pro_id, offer_price')
+        .inFilter('pro_id', productIds);
+
+    final rows = (response as List<dynamic>).cast<Map<String, dynamic>>();
+    return {
+      for (final row in rows)
+        row['pro_id']?.toString() ?? '':
+            (row['offer_price'] as num?)?.toDouble() ?? 0,
+    };
+  }
+
+  int _effectiveItemPrice(double productPrice, double? offerPrice) {
+    if (offerPrice != null && offerPrice > 0 && offerPrice < productPrice) {
+      return offerPrice.round();
+    }
+
+    return productPrice.round();
   }
 
   int _calculateTotalAmount(List<Map<String, dynamic>> cartItems) {

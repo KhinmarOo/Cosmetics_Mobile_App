@@ -15,7 +15,7 @@ class ShopByBrandSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final visibleCategories = categories.take(6).toList();
+    final visibleCategories = categories;
 
     if (visibleCategories.isEmpty) {
       return const SizedBox.shrink();
@@ -33,7 +33,7 @@ class ShopByBrandSection extends StatelessWidget {
               fontWeight: FontWeight.bold,
               color: Color(0xFF2D1D15),
               letterSpacing: 0.5,
-            ),
+            )
           ),
         ),
         SizedBox(
@@ -74,7 +74,7 @@ class _BrandItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const goldColor = Color(0xFFD4AF37);
-    final brandImage = _brandImage(category.catName);
+    final brandImage = category.catImage.trim();
 
     return GestureDetector(
       onTap: onTap,
@@ -101,14 +101,14 @@ class _BrandItem extends StatelessWidget {
                 ),
               ),
               child: Center(
-                child: brandImage == null
+                child: brandImage.isEmpty
                     ? const Icon(
                         Icons.spa_outlined,
                         color: Color(0xFF2D1D15),
                         size: 28,
                       )
                     : ClipOval(
-                        child: Image.asset(
+                        child: Image.network(
                           brandImage,
                           width: 38,
                           height: 38,
@@ -139,25 +139,5 @@ class _BrandItem extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String? _brandImage(String brandName) {
-    final name = brandName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-    const brandAssets = {
-      'cutapro': 'assets/images/cutapro.png',
-      'fraijour': 'assets/images/fraijour.png',
-      'maybelline': 'assets/images/maybelline.png',
-      'novo': 'assets/images/novo.png',
-      'romand': 'assets/images/romand.png',
-      'vaseline': 'assets/images/vaseline.png',
-    };
-
-    for (final entry in brandAssets.entries) {
-      if (name.contains(entry.key)) {
-        return entry.value;
-      }
-    }
-
-    return null;
   }
 }
