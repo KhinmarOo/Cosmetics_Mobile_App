@@ -28,13 +28,14 @@
 * **Authentication:** Supabase Auth
 
 ## 📸 App Screenshots
-| Home Page | All Product Page | Shopping Cart |
 
-<img width="300" height="700" alt="photo_2026-06-07_21-32-19" src="https://github.com/user-attachments/assets/6ca1728f-1048-416a-910d-31c8c7c45920" /><img width="300" height="700" alt="photo_2026-06-07_21-36-58" src="https://github.com/user-attachments/assets/8b2f0dfc-2488-4684-b5eb-6069ec7f7ff0" /><img width="300" height="700" alt="photo_2026-06-07_21-36-30" src="https://github.com/user-attachments/assets/25923b3a-8874-4095-a923-5d25c11ce313" />
+##| Home Page | All Product Page | Shopping Cart |
 
-| Wishlist Page | Product Details | Checkout Page |
+<img width="300" height="600" alt="photo_2026-06-07_21-32-19" src="https://github.com/user-attachments/assets/6ca1728f-1048-416a-910d-31c8c7c45920" /><img width="300" height="600" alt="photo_2026-06-07_21-36-58" src="https://github.com/user-attachments/assets/8b2f0dfc-2488-4684-b5eb-6069ec7f7ff0" /><img width="300" height="600" alt="photo_2026-06-07_21-36-30" src="https://github.com/user-attachments/assets/25923b3a-8874-4095-a923-5d25c11ce313" />
 
-<img width="300" height="700" alt="wishlist" src="https://github.com/user-attachments/assets/e8f73d28-e21d-4015-80d7-23875c43ed00" /><img width="300" height="700" alt="checkout" src="https://github.com/user-attachments/assets/77f07e04-ff9a-4edf-8c3f-0a5026e79d50" /><img width="300" height="700" alt="product_details" src="https://github.com/user-attachments/assets/61f80611-b903-4b32-bac2-98849fb54fdb" />
+## | Wishlist Page | Product Details | Checkout Page |
+
+<img width="300" height="600" alt="wishlist" src="https://github.com/user-attachments/assets/e8f73d28-e21d-4015-80d7-23875c43ed00" />    <img width="300" height="600" alt="checkout" src="https://github.com/user-attachments/assets/77f07e04-ff9a-4edf-8c3f-0a5026e79d50" />    <img width="300" height="600" alt="product_details" src="https://github.com/user-attachments/assets/61f80611-b903-4b32-bac2-98849fb54fdb" />
 
 
 
