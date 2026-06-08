@@ -1,4 +1,4 @@
-<img width="1362" height="683" alt="image" src="https://github.com/user-attachments/assets/5480cb6c-2c97-4419-ac11-5633290a21b5" /># Beauty with me - Cosmetics Mobile Application
+## Beauty with me - Cosmetics Mobile Application
 
 **Beauty with me** is a professional cosmetics E-commerce mobile application built with Flutter. It provides a seamless shopping experience with a comprehensive Admin panel for store management and a user-friendly interface for customers.
 
